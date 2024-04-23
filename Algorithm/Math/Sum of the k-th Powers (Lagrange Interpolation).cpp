@@ -1,4 +1,4 @@
-//https://www.spoj.com/problems/ASUMEXTR/
+//https://codeforces.com/contest/622/problem/F
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -9,8 +9,8 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int K = 1e7 + 5;
-const long long M = 1234567891;
+const int K = 1e6 + 5;
+const long long M = 1e9 + 7;
 
 long long y[K];
 long long pref[K];
@@ -39,12 +39,12 @@ long long lagrange(long long n, int k) {
         return y[n];
     }
     inv[0] = 1;
-    pref[0] = n % M, suf[deg] = (n - deg) % M;
+    pref[0] = n, suf[deg] = n - deg;
     for (int i = 1; i < deg; i++) {
-        pref[i] = (pref[i - 1] * ((n - i) % M)) % M;
+        pref[i] = (pref[i - 1] * (n - i)) % M;
     }
     for (int i = deg - 1; i >= 0; i--) {
-        suf[i] = (suf[i + 1] * ((n - i) % M)) % M;
+        suf[i] = (suf[i + 1] * (n - i)) % M;
     }
     for (int i = 1; i <= deg; i++) {
         inv[i] = (inv[i - 1] * modPow(i, M - 2, M)) % M;
@@ -71,14 +71,9 @@ long long lagrange(long long n, int k) {
 
 int main() {
     IOS;
-    int t;
-    cin >> t;
-    while (t--) {
-        long long n, k;
-        cin >> n >> k;
-        long long ans = (((n + 1) % M) * lagrange(n, k) % M - lagrange(n, k + 1) + M) % M;
-        cout << ans << endl;
-    }
+    long long n, k;
+    cin >> n >> k;
+    cout << lagrange(n, k);
 
     return 0;
 }
