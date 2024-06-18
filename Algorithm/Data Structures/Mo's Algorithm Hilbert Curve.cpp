@@ -9,7 +9,7 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 5e5 + 5;
+const int N = 2e5 + 5;
 
 struct custom_hash {
     static uint64_t splitmix64(uint64_t x) {
@@ -28,29 +28,41 @@ struct custom_hash {
 int a[N];
 int freq[N];
 int sz;
-tuple<int, int, int> queries[N];
+tuple<int, int, int, int64_t> queries[N];
 int ans[N];
 gp_hash_table<int, int, custom_hash> pos;
 
-bool comp(tuple<int, int, int> a, tuple<int, int, int> b) {
-    int block1 = get<0>(a) / sz;
-    int block2 = get<0>(b) / sz;
-    if (block1 != block2) {
-        return block1 < block2;
-    }
-    int r1 = get<1>(a);
-    int r2 = get<1>(b);
-    return r1 < r2;
+inline int64_t hilbert(int x, int y, int pow, int rot) {
+	if (pow == 0) {
+		return 0;
+	}
+	int hpow = 1 << (pow-1);
+	int seg = (x < hpow) ? (
+		(y < hpow) ? 0 : 3
+	) : (
+		(y < hpow) ? 1 : 2
+	);
+	seg = (seg + rot) & 3;
+	const int rotateDelta[4] = {3, 0, 0, 1};
+	int nx = x & (x ^ hpow), ny = y & (y ^ hpow);
+	int nrot = (rot + rotateDelta[seg]) & 3;
+	int64_t subSquareSize = int64_t(1) << (2*pow - 2);
+	int64_t ans = seg * subSquareSize;
+	int64_t add = hilbert(nx, ny, pow-1, nrot);
+	ans += (seg == 1 || seg == 2) ? add : (subSquareSize - add - 1);
+	return ans;
+}
+
+bool comp(tuple<int, int, int, int64_t> a, tuple<int, int, int, int64_t> b) {
+    int64_t h1 = get<3>(a);
+    int64_t h2 = get<3>(b);
+    return h1 < h2;
 }
 
 int main() {
     IOS;
     int n, q;
     cin >> n >> q;
-    sz = sqrt(n);
-    if (sz * sz != n) {
-        sz++;
-    }
     for (int i = 0; i < n; i++) {
         cin >> a[i];
         if (pos.find(a[i]) == pos.end()) {
@@ -64,7 +76,7 @@ int main() {
         int l, r;
         cin >> l >> r;
         l--, r--;
-        queries[i] = make_tuple(l, r, i);
+        queries[i] = make_tuple(l, r, i, hilbert(l, r, 21, 0));
     }
     sort(queries, queries + q, comp);
     int l = 0;
@@ -109,4 +121,3 @@ int main() {
     }
     return 0;
 }
-

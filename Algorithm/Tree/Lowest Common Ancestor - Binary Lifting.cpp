@@ -17,7 +17,7 @@ vector<vector<int>> up;
 int timer = 0, lg;
 
 void dfs(int v, int p) {
-    tin[v] = ++timer;
+    tin[v] = timer++;
     up[v][0] = p;
     for (int i = 1; i <= lg; i++) {
         up[v][i] = up[up[v][i - 1]][i - 1];
@@ -27,7 +27,7 @@ void dfs(int v, int p) {
             dfs(u, v);
         }
     }
-    tout[v] = ++timer;
+    tout[v] = timer++;
 }
 
 bool is_ancestor(int u, int v) {
