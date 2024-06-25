@@ -13,7 +13,6 @@ const int N = 2e5 + 5;
 
 int a[N];
 int ans[N];
-int sz[N];
 int parent[N];
 vector<int> adj[N];
 set<int> st[N];
@@ -38,16 +37,14 @@ void dsu_merge(int a, int b) {
 }
 
 void dfs(int u, int p) {
-    vector<int> child;
     for (int v : adj[u]) {
         if (v != p) {
             dfs(v, u);
-            child.push_back(v);
         }
     }
-    for (int v : child) {
-        int a = dsu_find(u), b = dsu_find(v);
-        if (a != b) {
+    for (int v : adj[u]) {
+        if (v != p) {
+            int a = dsu_find(u), b = dsu_find(v);
             dsu_merge(a, b);
         }
     }
