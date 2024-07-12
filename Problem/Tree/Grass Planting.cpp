@@ -1,4 +1,4 @@
-//https://cses.fi/problemset/task/2134/
+//https://www.spoj.com/problems/GRASSPLA/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -73,37 +73,51 @@ int lca(int u, int v) {
     return up[u][0];
 }
 
-vector<int> segtree[N];
+vector<long long> segtree[N];
+vector<long long> lazy[N];
 
-int rmq(int l, int r, int lq, int rq, int node, int n) {
-    if (l > rq || r < lq || lq > rq) {
-        return 0;
-    }
-
-    if (lq <= l && rq >= r) {
-        return segtree[n][node];
-    }
-
-    int mid = (l + r) / 2;
-    return max(rmq(l, mid, lq, rq, 2 * node + 1, n),
-               rmq(mid + 1, r, lq, rq, 2 * node + 2, n));
+void compose(int parent, int child, int n) {
+    lazy[n][child] += lazy[n][parent];
 }
 
-void update(int l, int r, int ind, int val, int node, int n) {
-    if (l == r) {
-        segtree[n][node] = val;
+void apply(int node, int l, int r, int n) {
+    segtree[n][node] += (r - l + 1) * lazy[n][node];
+    if (l != r) {
+        compose(node, 2 * node + 1, n);
+        compose(node, 2 * node + 2, n);
+    }
+    lazy[n][node] = 0;
+}
+
+void incUpdate(int node, int l, int r, int lq, int rq, int add, int n) {
+    if (l > rq || lq > r || lq > rq) {
         return;
     }
-
-    int mid = (l + r) / 2;
-    if (ind >= l && ind <= mid) {
-        update(l, mid, ind, val, 2 * node + 1, n);
-    } else {
-        update(mid + 1, r, ind, val, 2 * node + 2, n);
+    if (l >= lq && r <= rq) {
+        lazy[n][node] += add;
+        return;
     }
-    segtree[n][node] = max(segtree[n][2 * node + 1], segtree[n][2 * node + 2]);
+    apply(node, l, r, n);
+    int mid = (l + r) / 2;
+    incUpdate(node * 2 + 1, l, mid, lq, rq, add, n);
+    incUpdate(node * 2 + 2, mid + 1, r, lq, rq, add, n);
+    apply(2 * node + 1, l, mid, n);
+    apply(2 * node + 2, mid + 1, r, n);
+    segtree[n][node] = segtree[n][node * 2 + 1] + segtree[n][node * 2 + 2];
 }
 
+long long getSum(int l, int r, int lq, int rq, int node, int n) {
+    if (l > rq || lq > r || lq > rq) {
+        return 0;
+    }
+    apply(node, l, r, n);
+    if (l >= lq && r <= rq) {
+        return segtree[n][node];
+    }
+    int mid = (l + r) / 2;
+    return getSum(l, mid, lq, rq, 2 * node + 1, n) +
+           getSum(mid + 1, r, lq, rq, 2 * node + 2, n);
+}
 
 void build(int l, int r, int node, int n) {
     if (l > r) {
@@ -117,21 +131,34 @@ void build(int l, int r, int node, int n) {
     int mid = (l + r) / 2;
     build(l, mid, 2 * node + 1, n);
     build(mid + 1, r, 2 * node + 2, n);
-    segtree[n][node] = max(segtree[n][2 * node + 1], segtree[n][2 * node + 2]);
+    segtree[n][node] = segtree[n][2 * node + 1] + segtree[n][2 * node + 2];
 }
 
-int calc(int a, int b, int flag) {
-    int mx = 0;
+int calc(int a, int b) {
+    long long sum = 0;
     while (1) {
         int j = pos[a].first;
         if (j == pos[b].first) {
-            mx = max(mx, rmq(0, paths[j].size() - 1, pos[a].second, pos[b].second - flag, 0, j));
+            sum += getSum(0, paths[j].size() - 1, pos[a].second, pos[b].second - 1, 0, j);
             break;
         }
-        mx = max(mx, rmq(0, paths[j].size() - 1, pos[a].second, paths[j].size() - 1, 0, j));
+        sum += getSum(0, paths[j].size() - 1, pos[a].second, paths[j].size() - 1, 0, j);
         a = parent[tail[a]];
     }
-    return mx;
+    return sum;
+}
+
+void upd(int a, int b) {
+     while (1) {
+        int j = pos[a].first;
+        if (j == pos[b].first) {
+            incUpdate(0, 0, paths[j].size() - 1, pos[a].second, pos[b].second - 1, 1, j);
+            break;
+        }
+        incUpdate(0, 0, paths[j].size() - 1, pos[a].second, paths[j].size() - 1, 1, j);
+        a = parent[tail[a]];
+    }
+
 }
 
 
@@ -144,7 +171,6 @@ int main() {
     tin.resize(n);
     tout.resize(n);
     for (int i = 0; i < n; i++) {
-        cin >> vals[i];
         head[i] = true;
     }
 
@@ -177,28 +203,38 @@ int main() {
     }
 
     for (int i = 0; i < paths.size(); i++) {
+        lazy[i].resize(4 * paths[i].size());
         segtree[i].resize(4 * paths[i].size());
         build(0, paths[i].size() - 1, 0, i);
     }
     for (int i = 0; i < q; i++) {
-        int t, u, v;
-        cin >> t >> u >> v;
-        if (t == 2) {
+        char c;
+        cin >> c;
+
+        int u, v;
+        cin >> u >> v;
+        if (c == 'Q') {
             u--, v--;
             if (tin[u] > tin[v]) {
                 swap(u, v);
             }
             int l = lca(u, v);
-            int ans = calc(v, l, 0);
+            int ans = calc(v, l);
             if (u != l) {
-                ans = max(ans, calc(u, l, 1));
+                ans = max(ans, calc(u, l));
             }
-            cout << ans << " ";
+            cout << ans << endl;
 
         } else {
-            u--;
-            int j = pos[u].first;
-            update(0, paths[j].size() - 1, pos[u].second, v, 0, j);
+            u--, v--;
+            if (tin[u] > tin[v]) {
+                swap(u, v);
+            }
+            int l = lca(u, v);
+            upd(v, l);
+            if (u != l) {
+                upd(u, l);
+            }
         }
     }
     return 0;
