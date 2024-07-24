@@ -13,7 +13,11 @@ const long long INF = 1e18;
 
 long long a[N];
 long long dp[N][N];
-long long cost[N][N];
+long long pref[N];
+
+long long sum(int l, int r) {
+    return pref[r] - ((l == 0) ? 0 : pref[l - 1]);
+}
 
 int main() {
     IOS;
@@ -21,24 +25,21 @@ int main() {
     cin >> n;
     for (int i = 0; i < n; i++) {
         cin >> a[i];
+        pref[i] = ((i == 0) ? a[i] : pref[i - 1] + a[i]);
     }
     long long ans = 0;
     for (int i = 0; i < n; i++) {
         for (int j = 0; j + i < n; j++) {
             if (i == 0) {
-                dp[j][j] = a[j];
-                cost[j][j] = 0;
+                dp[j][j] = 0;
                 continue;
             }
             dp[j][j + i] = INF;
             for (int k = j; k < j + i; k++) {
-                if (dp[j][j + i] > dp[j][k] + dp[k + 1][j + i] || (dp[j][j + i] >= dp[j][k] + dp[k + 1][j + i] && cost[j][j + i] > dp[j][j + i] + cost[j][k] + cost[k + 1][j + i])) {
-                    dp[j][j + i] = dp[j][k] + dp[k + 1][j + i];
-                    cost[j][j + i] = dp[j][j + i] + cost[j][k] + cost[k + 1][j + i];
-                }
+                dp[j][j + i] = min(dp[j][j + i], dp[j][k] + dp[k + 1][j + i] + sum(j, j + i));
             }
         }
     }
-    cout << cost[0][n - 1] << endl;
+    cout << dp[0][n - 1] << endl;
     return 0;
 }

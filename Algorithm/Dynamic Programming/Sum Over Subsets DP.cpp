@@ -33,17 +33,12 @@ int main() {
     }
     for (int k = 0; k < K; k++) {
         for (int j = 0; j < bits; j++) {
-            if (j & (1 << k)) {
+            int c = j & (1 << k);
+            if (c) {
                 dp[j] += dp[j ^ (1 << k)];
-            }
-            if (!(j & (1 << k))) {
-                dp_super[j] += dp_super[j | (1 << k)];
+                dp_super[j ^ (1 << k)] += dp_super[j];
             }
         }
-    }
-    long long sum = 0;
-    for (int i = 0; i < n; i++) {
-        sum += dp[a[i]];
     }
     for (int i = 0; i < n; i++) {
         int j = a[i];
