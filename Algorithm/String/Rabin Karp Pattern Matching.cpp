@@ -12,45 +12,50 @@ using namespace __gnu_pbds;
 string a, b;
 
 const long long M = 1e9 + 7;
-const long long P = 26;
-const long long Q = 53;
+const long long P = 26, INV_P = 576923081;
+const long long Q = 53, INV_Q = 56603774;
 
-long long compute_hash(string s, long long X) {
-    long long hash_value = 0;
-    long long p_pow = 1;
-    for (int i = s.size() - 1; i >= 0; i--) {
-        hash_value = (hash_value + (long long)(s[i] - 'a' + 1) * p_pow) % M;
-        p_pow = (p_pow * X) % M;
+pair<long long, long long> calc(string s) {
+    int n = s.size();
+    long long p = 0, q = 0;
+    long long p_pow = 1, q_pow = 1;
+    for (int i = 0; i < n; i++) {
+        p = (p + p_pow * (s[i] - 'a' + 1)) % M;
+        q = (q + q_pow * (s[i] - 'a' + 1)) % M;
+        p_pow = (p_pow * P) % M;
+        q_pow = (q_pow * Q) % M;
     }
-    return hash_value;
+    return make_pair(p, q);
 }
 
 int main() {
     IOS;
     cin >> a >> b;
-    if (a.size() < b.size()) {
+    int n = a.size(), m = b.size();
+    if (n < m) {
         cout << 0 << endl;
         return 0;
     }
-    pair<long long, long long> h = make_pair(compute_hash(b, P), compute_hash(b, Q));
+    pair<long long, long long> h = calc(b);
+
     long long p = 0, q = 0;
     long long p_pow = 1, q_pow = 1;
-    int ans = 0;
-    for (int i = b.size() - 1; i >= 0; i--) {
-        p = (p + (long long)(a[i] - 'a' + 1) * p_pow) % M;
-        q = (q + (long long)(a[i] - 'a' + 1) * q_pow) % M;
-        if (i != 0) {
+    for (int i = 0; i < m; i++) {
+        p = (p + p_pow * (a[i] - 'a' + 1)) % M;
+        q = (q + q_pow * (a[i] - 'a' + 1)) % M;
+        if (i != m - 1) {
             p_pow = (p_pow * P) % M;
             q_pow = (q_pow * Q) % M;
         }
     }
     pair<long long, long long> sub = make_pair(p, q);
+    int ans = 0;
     if (sub == h) {
         ans++;
     }
-    for (int i = b.size(); i < a.size(); i++) {
-        p = (((p - p_pow * (long long)(a[i - b.size()] - 'a' + 1) + P * M) % M) * P + (long long)(a[i] - 'a' + 1)) % M;
-        q = (((q - q_pow * (long long)(a[i - b.size()] - 'a' + 1) + Q * M) % M) * Q + (long long)(a[i] - 'a' + 1)) % M;
+    for (int i = m; i < n; i++) {
+        p = ((p - (a[i - m] - 'a' + 1)) * INV_P + p_pow * (a[i] - 'a' + 1)) % M;
+        q = ((q - (a[i - m] - 'a' + 1)) * INV_Q + q_pow * (a[i] - 'a' + 1)) % M;
         sub = make_pair(p, q);
         if (sub == h) {
             ans++;
