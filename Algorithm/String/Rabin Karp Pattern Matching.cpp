@@ -54,8 +54,8 @@ int main() {
         ans++;
     }
     for (int i = m; i < n; i++) {
-        p = ((p - (a[i - m] - 'a' + 1)) * INV_P + p_pow * (a[i] - 'a' + 1)) % M;
-        q = ((q - (a[i - m] - 'a' + 1)) * INV_Q + q_pow * (a[i] - 'a' + 1)) % M;
+        p = ((p - (a[i - m] - 'a' + 1) + M) * INV_P + p_pow * (a[i] - 'a' + 1)) % M;
+        q = ((q - (a[i - m] - 'a' + 1) + M) * INV_Q + q_pow * (a[i] - 'a' + 1)) % M;
         sub = make_pair(p, q);
         if (sub == h) {
             ans++;
