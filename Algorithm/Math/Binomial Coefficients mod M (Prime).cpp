@@ -14,47 +14,34 @@ const int N = 1e6 + 5;
 
 long long fact[N];
 
-long long modInverse(long long a, long long m) {
+long long modPow(long long a, long long y) {
     long long res = 1;
-    long long y = m - 2;
     while(y > 0) {
         if(y % 2 != 0) {
-            res = (res * a) % m;
+            res = (res * a) % M;
         }
         y /= 2;
-        a = (a * a) % m;
+        a = (a * a) % M;
     }
     return res;
 }
 
-long long modDivide(long long a, long long b, long long m) {
-    a = a % m;
-    long long inv = modInverse(b, m);
-    return (inv * a) % m;
-}
-
-long long binomial(long long n, long long k, long long m) {
-    long long num = fact[n];
-    long long denom = (fact[k] * fact[n - k]) % m;
-    return modDivide(num, denom, m);
+long long binomial(long long n, long long k) {
+    return fact[n] * modPow(fact[k] * fact[n - k] % M, M - 2) % M;
 }
 
 int main() {
     IOS;
-    long long f = 1;
     fact[0] = 1;
-    for (long long i = 1; i < N; i++) {
-        f *= i;
-        f %= M;
-        fact[i] = f;
+    for (int i = 1; i < N; i++) {
+        fact[i] = fact[i - 1] * i % M;
     }
     int q;
     cin >> q;
     for (int i = 0; i < q; i++) {
         long long n, k;
         cin >> n >> k;
-        long long ans = binomial(n, k, M);
-        cout << ans << endl;
+        cout << binomial(n, k) << endl;
     }
     return 0;
 }
