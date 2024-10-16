@@ -1,4 +1,4 @@
-//https://www.spoj.com/problems/ORDERSET/
+//https://codeforces.com/contest/911/problem/G
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -10,6 +10,9 @@ using namespace __gnu_pbds;
 
 mt19937 generator(chrono::steady_clock::now().time_since_epoch().count());
 
+const int MAX = 101;
+const int N = 2e5 + 5;
+
 struct Node {
     int key;
     int priority;
@@ -19,6 +22,9 @@ struct Node {
 
     Node(int key) : key(key), priority(generator()), cnt(1), left(nullptr), right(nullptr) {}
 };
+
+int ans[N];
+Node* root[MAX];
 
 int get_cnt(Node* node) {
     return node ? node->cnt : 0;
@@ -93,59 +99,70 @@ Node* erase(Node* root, int key) {
     return root;
 }
 
-int kth(Node* root, int k) {
-    if (!root) {
-        return -1;
+Node* tr_union(Node *left, Node *right) {
+    if (!left || !right) {
+        return left ? left : right;
     }
-    int x = k - get_cnt(root->left);
-    if (x <= 0) {
-        return kth(root->left, k);
-    } else if (x == 1) {
-        return root->key;
-    } else {
-        return kth(root->right, x - 1);
+    if (left->priority < right->priority) {
+        swap(left, right);
     }
+    Node *a, *b;
+    split(right, left->key + 1, a, b);
+    left->right = tr_union(left->right, b);
+    left->left = tr_union(a, left->left);
+    upd_cnt(left);
+    upd_cnt(right);
+    return left;
 }
 
-pair<int, bool> find(Node* root, int key) {
-    if (!root) {
-        return make_pair(0, false);
+void dfs(Node* node, int n) {
+    if (!node) {
+        return;
     }
-    if (root->key == key) {
-        return make_pair(get_cnt(root->left), true);
+    if (node->left) {
+        dfs(node->left, n);
     }
-    if (root->key > key) {
-        pair<int, int> lf = find(root->left, key);
-        return lf;
-    } else {
-        pair<int, int> rt = find(root->right, key);
-        return make_pair(rt.first + 1 + get_cnt(root->left), rt.second);
+    ans[node->key] = n;
+    if (node->right) {
+        dfs(node->right, n);
     }
 }
 
 int main(){
     IOS;
-    Node* root = nullptr;
-    int n;
+    for (int i = 0; i < MAX; i++) {
+        root[i] = nullptr;
+    }
+    int n, q;
     cin >> n;
-    while (n--) {
-        char c; int n;
-        cin >> c >> n;
-        if (c == 'I') {
-            if (!find(root, n).second) {
-                root = insert(root, new Node(n));
-            }
-        } else if (c == 'D') {
-            root = erase(root, n);
-        } else if (c == 'K') {
-            if (n > get_cnt(root)) {
-                cout << "invalid" << endl;
-            } else {
-                cout << kth(root, n) << endl;
-            }
-        } else {
-            cout << find(root, n).first << endl;
+    for (int i = 0; i < n; i++) {
+        int a;
+        cin >> a;
+        root[a] = insert(root[a], new Node(i));
+    }
+    cin >> q;
+    for (int i = 0; i < q; i++) {
+        int l, r, x, y;
+        cin >> l >> r >> x >> y;
+        l--, r--;
+        if (x == y) {
+            continue;
         }
+        Node *ax, *bx, *cx, *dx;
+        split(root[x], l, ax, bx);
+        split(bx, r + 1, cx, dx);
+        Node *ay, *by, *cy, *dy;
+        split(root[y], l, ay, by);
+        split(by, r + 1, cy, dy);
+        cy = tr_union(cx, cy);
+        root[x] = merge(ax, dx);
+        root[y] = merge(ay, merge(cy, dy));
+    }
+    for (int i = 0; i < MAX; i++) {
+        dfs(root[i], i);
+    }
+    for (int i = 0; i < n; i++) {
+        cout << ans[i] << " ";
     }
     return 0;
 }

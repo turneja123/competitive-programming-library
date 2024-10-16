@@ -1,4 +1,3 @@
-//solution for https://cses.fi/problemset/task/1675/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -9,19 +8,20 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 100005;
+const int N = 200005;
 
 int parent[N];
 int sz[N];
 bool vis[N];
 
-list <int> adj[N];
+vector<int> adj[N];
+tuple<long long, int, int> edge[N];
 
 int dsu_find(int a) {
-    while (parent[a] != a) {
-        a = parent[a];
+    if (parent[a] == a) {
+        return a;
     }
-    return a;
+    return parent[a] = dsu_find(parent[a]);
 }
 
 void dsu_unite(int a, int b) {
@@ -47,8 +47,7 @@ int main() {
     IOS;
     int n, m;
     cin >> n >> m;
-    ll len = 0;
-    tuple <ll, int, int> edge[m];
+    long long ans = 0;
     for (int i = 0; i < m; i++) {
         int a, b, wt;
         cin >> a >> b >> wt;
@@ -69,16 +68,16 @@ int main() {
     }
     sort(edge, edge + m);
     for (int i = 0; i < m; i++) {
-        ll wt = get<0>(edge[i]);
+        long long wt = get<0>(edge[i]);
         int a = get<1>(edge[i]);
         int b = get<2>(edge[i]);
         int p1 = dsu_find(a);
         int p2 = dsu_find(b);
         if (p1 != p2) {
             dsu_unite(p1, p2);
-            len += wt;
+            ans += wt;
         }
     }
-    cout << len;
+    cout << ans;
     return 0;
 }
