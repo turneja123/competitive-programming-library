@@ -14,18 +14,23 @@ const int K = 19;
 
 vector<pair<int, int>> adj[N];
 int a[N];
-pair<int, pair<int, int>> up[K][N];
+int up[K][N];
+int mx[K][N];
+int mn[K][N];
+
 int depth[N];
 
-int mn, mx;
+int x, y;
 
 void dfs(int u, int p) {
-    up[0][u].first = p;
-    up[0][u].second = make_pair(min(a[p], a[u]), max(a[p], a[u]));
+    up[0][u] = p;
+    mx[0][u] = a[u];
+    mn[0][u] = a[u];
     for (int k = 1; k < K; k++) {
-        up[k][u].first = up[k - 1][up[k - 1][u].first].first;
-        up[k][u].second.first = min(up[k - 1][u].second.first, up[k - 1][up[k - 1][u].first].second.first);
-        up[k][u].second.second = max(up[k - 1][u].second.second, up[k - 1][up[k - 1][u].first].second.second);
+        int v = up[k - 1][u];
+        up[k][u] = up[k - 1][v];
+        mx[k][u] = max(mx[k - 1][u], mx[k - 1][v]);
+        mn[k][u] = min(mn[k - 1][u], mn[k - 1][v]);
     }
     for (pair<int, int> pr : adj[u]) {
         int v = pr.first, wt = pr.second;
@@ -46,30 +51,26 @@ int lca(int u, int v) {
     for (int k = K - 1; k >= 0; k--) {
         int c = x & (1 << k);
         if (c) {
-            u = up[k][u].first;
+            u = up[k][u];
         }
     }
     if (u == v) {
         return u;
     }
     for (int k = K - 1; k >= 0; k--) {
-        if (up[k][u].first != up[k][v].first) {
-            u = up[k][u].first, v = up[k][v].first;
+        if (up[k][u] != up[k][v]) {
+            u = up[k][u], v = up[k][v];
         }
     }
-    return up[0][u].first;
+    return up[0][u];
 }
 
-void calc(int u, int x) {
-    if (x == 0) {
-        mn = min(mn, a[u]), mx = max(mx, a[u]);
-        return;
-    }
+void calc(int u, int d) {
     for (int k = K - 1; k >= 0; k--) {
-        int c = x & (1 << k);
+        int c = d & (1 << k);
         if (c) {
-            mn = min(mn, up[k][u].second.first), mx = max(mx, up[k][u].second.second);
-            u = up[k][u].first;
+            x = min(x, mn[k][u]), y = max(y, mx[k][u]);
+            u = up[k][u];
         }
     }
     return;
@@ -93,16 +94,16 @@ int main() {
         cin >> u >> v;
         u--, v--;
         int l = lca(u, v);
-        mn = 1e9, mx = 0;
+        x = 1e9, y = 0;
         if (u != l) {
-            int d = depth[u] - depth[l] - 1;
+            int d = depth[u] - depth[l];
             calc(u, d);
         }
         if (v != l) {
-            int d = depth[v] - depth[l] - 1;
+            int d = depth[v] - depth[l];
             calc(v, d);
         }
-        cout << mn << " " << mx << endl;
+        cout << x << " " << y << endl;
     }
     return 0;
 }
