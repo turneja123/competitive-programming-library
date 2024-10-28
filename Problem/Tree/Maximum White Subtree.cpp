@@ -1,4 +1,4 @@
-//https://cses.fi/problemset/task/1132/
+//https://codeforces.com/contest/1324/problem/F
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -13,37 +13,38 @@ const int N = 2e5 + 5;
 
 vector<int> adj[N];
 
-int depth[N];
-int sz[N];
+int a[N];;
 long long subtree[N];
 long long dp[N];
 
 void dfs_subtree(int u, int p) {
-    sz[u] = 1;
+    subtree[u] = ((a[u] == 1) ? 1 : -1);
     for (int v : adj[u]) {
         if (v != p) {
-            depth[v] = depth[u] + 1;
             dfs_subtree(v, u);
-            sz[u] += sz[v];
-            subtree[u] += subtree[v] + sz[v];
+            subtree[u] += max(0ll, subtree[v]);
         }
     }
-
+    return;
 }
 
 void dfs(int u, int p, int n) {
     for (int v : adj[u]) {
         if (v != p) {
-            dp[v] += (dp[u] + n - sz[u]) + (subtree[u] + sz[u] - sz[v]) - (subtree[v] + sz[v]);
+            dp[v] = max(0ll, dp[u] + subtree[u] - max(0ll, subtree[v]));
             dfs(v, u, n);
         }
     }
+    return;
 }
 
 int main() {
     IOS;
     int n;
     cin >> n;
+    for (int i = 0; i < n; i++) {
+        cin >> a[i];
+    }
     for (int i = 0; i < n - 1; i++) {
         int u, v;
         cin >> u >> v;

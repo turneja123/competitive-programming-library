@@ -14,28 +14,38 @@ const int N = 2e5 + 5;
 vector<int> adj[N];
 
 int depth[N];
-int sz[N];
-long long subtree[N];
-long long dp[N];
+int subtree[N];
+int aux[N];
+int child[N];
+int dp[N];
 
 void dfs_subtree(int u, int p) {
-    sz[u] = 1;
     for (int v : adj[u]) {
         if (v != p) {
             depth[v] = depth[u] + 1;
             dfs_subtree(v, u);
-            sz[u] += sz[v];
-            subtree[u] += subtree[v] + sz[v];
+            if (subtree[v] + 1 > subtree[u]) {
+                subtree[u] = subtree[v] + 1;
+                child[u] = v;
+            }
         }
     }
-
+    for (int v : adj[u]) {
+        if (v != p && v != child[u]) {
+            aux[u] = max(aux[u], subtree[v] + 1);
+        }
+    }
 }
 
-void dfs(int u, int p, int n) {
+void dfs(int u, int p) {
     for (int v : adj[u]) {
+        if (v != p && v != child[u]) {
+            dp[v] = max(dp[u] + 1, subtree[u] + 1);
+        } else if (v != p && v == child[u]) {
+            dp[v] = max(dp[u] + 1, aux[u] + 1);
+        }
         if (v != p) {
-            dp[v] += (dp[u] + n - sz[u]) + (subtree[u] + sz[u] - sz[v]) - (subtree[v] + sz[v]);
-            dfs(v, u, n);
+            dfs(v, u);
         }
     }
 }
@@ -52,9 +62,9 @@ int main() {
         adj[v].push_back(u);
     }
     dfs_subtree(0, 0);
-    dfs(0, 0, n);
+    dfs(0, 0);
     for (int i = 0; i < n; i++) {
-        cout << subtree[i] + dp[i] << " ";
+        cout << max(subtree[i], dp[i]) << " ";
     }
     return 0;
 }

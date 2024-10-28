@@ -1,4 +1,4 @@
-//https://cses.fi/problemset/task/1132/
+//https://codeforces.com/contest/1187/problem/E
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -13,7 +13,6 @@ const int N = 2e5 + 5;
 
 vector<int> adj[N];
 
-int depth[N];
 int sz[N];
 long long subtree[N];
 long long dp[N];
@@ -22,19 +21,25 @@ void dfs_subtree(int u, int p) {
     sz[u] = 1;
     for (int v : adj[u]) {
         if (v != p) {
-            depth[v] = depth[u] + 1;
             dfs_subtree(v, u);
             sz[u] += sz[v];
-            subtree[u] += subtree[v] + sz[v];
+            subtree[u] += subtree[v];
         }
     }
+    subtree[u] += sz[u];
 
 }
 
 void dfs(int u, int p, int n) {
+    long long sum = 0;
     for (int v : adj[u]) {
         if (v != p) {
-            dp[v] += (dp[u] + n - sz[u]) + (subtree[u] + sz[u] - sz[v]) - (subtree[v] + sz[v]);
+            sum += subtree[v];
+        }
+    }
+    for (int v : adj[u]) {
+        if (v != p) {
+            dp[v] = dp[u] + (sum - subtree[v]) + n - sz[v];
             dfs(v, u, n);
         }
     }
@@ -53,8 +58,10 @@ int main() {
     }
     dfs_subtree(0, 0);
     dfs(0, 0, n);
+    long long ans = 0;
     for (int i = 0; i < n; i++) {
-        cout << subtree[i] + dp[i] << " ";
+        ans = max(ans, subtree[i] + dp[i] + n - sz[i]);
     }
+    cout << ans;
     return 0;
 }
