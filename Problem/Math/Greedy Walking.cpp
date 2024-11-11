@@ -1,4 +1,4 @@
-//https://cses.fi/problemset/task/1079/
+//https://www.spoj.com/problems/UCV2013E/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -10,8 +10,9 @@ using namespace __gnu_pbds;
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
 const long long M = 1e9 + 7;
-const int N = 1e6 + 5;
+const int N = 1e5 + 5;
 
+int a[N];
 long long inv[N];
 long long fact[N];
 long long factinv[N];
@@ -28,12 +29,26 @@ int main() {
         fact[i] = fact[i - 1] * i % M;
         factinv[i] = factinv[i - 1] * inv[i] % M;
     }
-    int q;
-    cin >> q;
-    for (int i = 0; i < q; i++) {
-        long long n, k;
-        cin >> n >> k;
-        cout << binomial(n, k) << endl;
+    int n;
+    cin >> n;
+    while (n != 0) {
+        for (int i = 0; i < n; i++) {
+            cin >> a[i];
+        }
+        int m = 0;
+        for (int i = 0; i < n; i++) {
+            int b;
+            cin >> b;
+            a[i] = b - a[i];
+            m += a[i];
+        }
+        long long ans = 1;
+        for (int i = 0; i < n; i++) {
+            ans = ans * binomial(m, a[i]) % M;
+            m -= a[i];
+        }
+        cout << ans << endl;
+        cin >> n;
     }
     return 0;
 }

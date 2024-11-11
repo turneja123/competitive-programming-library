@@ -1,4 +1,4 @@
-//https://cses.fi/problemset/task/1079/
+//https://cses.fi/problemset/task/2228/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -20,6 +20,18 @@ long long binomial(long long n, long long k) {
     return fact[n] * factinv[k] % M * factinv[n - k] % M;
 }
 
+long long modPow(long long a, long long y) {
+    long long res = 1;
+    while(y > 0) {
+        if(y % 2 != 0) {
+            res = (res * a) % M;
+        }
+        y /= 2;
+        a = (a * a) % M;
+    }
+    return res;
+}
+
 int main() {
     IOS;
     fact[0] = 1, factinv[0] = 1;
@@ -28,12 +40,16 @@ int main() {
         fact[i] = fact[i - 1] * i % M;
         factinv[i] = factinv[i - 1] * inv[i] % M;
     }
-    int q;
-    cin >> q;
-    for (int i = 0; i < q; i++) {
-        long long n, k;
-        cin >> n >> k;
-        cout << binomial(n, k) << endl;
+    int n, k;
+    cin >> n >> k;
+    long long ans = 0;
+    for (int i = 0; i <= k; i++) {
+        if ((k - i) % 2 == 0) {
+            ans = (ans + binomial(k, i) * modPow(i, n)) % M;
+        } else {
+            ans = (ans - binomial(k, i) * modPow(i, n) % M + M) % M;
+        }
     }
+    cout << ans;
     return 0;
 }

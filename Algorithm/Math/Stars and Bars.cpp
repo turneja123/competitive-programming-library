@@ -1,4 +1,4 @@
-//https://cses.fi/problemset/task/1079/
+//https://codeforces.com/contest/57/problem/C
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -10,7 +10,7 @@ using namespace __gnu_pbds;
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
 const long long M = 1e9 + 7;
-const int N = 1e6 + 5;
+const int N = 3e5 + 5;
 
 long long inv[N];
 long long fact[N];
@@ -18,6 +18,10 @@ long long factinv[N];
 
 long long binomial(long long n, long long k) {
     return fact[n] * factinv[k] % M * factinv[n - k] % M;
+}
+
+long long stars(long long n, long long k) {
+    return binomial(n + k - 1, n);
 }
 
 int main() {
@@ -28,12 +32,12 @@ int main() {
         fact[i] = fact[i - 1] * i % M;
         factinv[i] = factinv[i - 1] * inv[i] % M;
     }
-    int q;
-    cin >> q;
-    for (int i = 0; i < q; i++) {
-        long long n, k;
-        cin >> n >> k;
-        cout << binomial(n, k) << endl;
+    int n;
+    cin >> n;
+    long long ans = 0, pref = 0;
+    for (int i = 1; i <= n; i++) {
+        ans += stars(i, n - 1) * (n - i + 1) % M;
     }
+    cout << (ans + 1) % M;
     return 0;
 }
