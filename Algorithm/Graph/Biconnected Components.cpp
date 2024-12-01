@@ -37,7 +37,7 @@ void dfs(int u, int p) {
             dfs(v, u);
             low[u] = min(low[u], low[v]);
             if (low[v] >= depth[u]) {
-                is_art[u] = (depth[u] > 0 || depth[v] > 2);
+                is_art[u] = (depth[u] > 0 || depth[v] > 1);
                 vector<int> bcc;
                 while (cur.size()) {
                     int w = cur.back();
