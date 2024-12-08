@@ -1,4 +1,4 @@
-//https://judge.yosupo.jp/problem/bipartitematching
+//https://codeforces.com/contest/2026/problem/E
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -9,7 +9,8 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 2e5 + 5;
+const int N = 200;
+const int K = 60;
 const int INF = 1e9;
 
 vector<int> adj[N];
@@ -77,19 +78,29 @@ int bpm() {
 
 int main() {
     IOS;
-    int e;
-    cin >> m >> n >> e;
-    for (int i = 0; i < e; i++) {
-        int a, b;
-        cin >> a >> b;
-        a++, b++;
-        adj[a].push_back(b + m);
-    }
-    cout << bpm() << endl;
-    for (int i = 1; i <= m; i++) {
-        if (pairU[i] > 0) {
-            cout << i - 1 << " " << pairU[i] - 1 - m << endl;
+    n = K;
+    int t;
+    cin >> t;
+    while (t--) {
+        cin >> m;
+        for (int i = 1; i <= m; i++) {
+            long long a;
+            cin >> a;
+            for (int j = 0; j < K; j++) {
+                long long c = a & (1ll << j);
+                if (c) {
+                    adj[i].push_back(j + 1 + m);
+                }
+            }
         }
+        int ans = m - bpm();
+        cout << ans << endl;
+        for (int i = 1; i <= m + K; i++) {
+            adj[i].clear();
+            pairU[i] = 0;
+            pairV[i] = 0;
+        }
+
     }
     return 0;
 

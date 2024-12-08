@@ -1,4 +1,4 @@
-//https://judge.yosupo.jp/problem/bipartitematching
+//https://www.spoj.com/problems/ADACITY/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -9,9 +9,10 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 2e5 + 5;
+const int N = 2005;
 const int INF = 1e9;
 
+int mat[N][N];
 vector<int> adj[N];
 int pairU[N];
 int pairV[N];
@@ -77,20 +78,49 @@ int bpm() {
 
 int main() {
     IOS;
-    int e;
-    cin >> m >> n >> e;
-    for (int i = 0; i < e; i++) {
-        int a, b;
-        cin >> a >> b;
-        a++, b++;
-        adj[a].push_back(b + m);
-    }
-    cout << bpm() << endl;
-    for (int i = 1; i <= m; i++) {
-        if (pairU[i] > 0) {
-            cout << i - 1 << " " << pairU[i] - 1 - m << endl;
+    int t;
+    cin >> t;
+    while (t--) {
+        int n, e, f, tim;
+        cin >> n >> e >> f >> tim;
+        vector<int> a(f);
+        for (int i = 0; i < f; i++) {
+            cin >> a[i];
+            a[i]--;
+        }
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                mat[i][j] = INF;
+            }
+            mat[i][i] = 0;
+        }
+        for (int i = 0; i < e; i++) {
+            int a, b, wt;
+            cin >> a >> b >> wt;
+            a--, b--;
+            mat[a][b] = min(mat[a][b], wt);
+            mat[b][a] = min(mat[b][a], wt);
+        }
+        for (int k = 0; k < n; k++) {
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    mat[i][j] = min(mat[i][j], mat[i][k] + mat[k][j]);
+                }
+            }
+        }
+        m = f;
+        for (int i = 0; i < f; i++) {
+            for (int j = 0; j < n; j++) {
+                if (mat[a[i]][j] <= tim) {
+                    adj[i + 1].push_back(j + 1 + m);
+                }
+            }
+        }
+        cout << bpm() << endl;
+        for (int i = 0; i <= n + f + 5; i++) {
+            adj[i].clear();
+            pairU[i] = 0, pairV[i] = 0, dist[i] = 0;
         }
     }
     return 0;
-
 }

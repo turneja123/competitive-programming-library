@@ -18,7 +18,7 @@ void build(int n) {
     for (int i = 1; i <= n; i++) {
         table[0][i] = a[i - 1];
     }
-    for (int k = 1; k < 18; k++) {
+    for (int k = 1; k < K; k++) {
         for (int i = 1; i + (1 << k) - 1 <= n; i++) {
             table[k][i] = min(table[k - 1][i], table[k - 1][i + (1 << (k - 1))]);
         }
