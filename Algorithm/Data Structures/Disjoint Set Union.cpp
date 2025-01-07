@@ -1,3 +1,4 @@
+//https://judge.yosupo.jp/problem/unionfind
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -14,10 +15,10 @@ int parent[N];
 int sz[N];
 
 int dsu_find(int a) {
-    while (parent[a] != a) {
-        a = parent[a];
+    if (parent[a] == a) {
+        return a;
     }
-    return a;
+    return parent[a] = dsu_find(parent[a]);
 }
 
 void dsu_unite(int a, int b) {
@@ -37,13 +38,17 @@ int main() {
         sz[i] = 1;
     }
     for (int i = 0; i < q; i++) {
-        int a, b;
-        cin >> a >> b;
-        a--, b--;
-        int p1 = dsu_find(a);
-        int p2 = dsu_find(b);
-        if (p1 != p2) {
-            dsu_unite(p1, p2);
+        int t, u, v;
+        cin >> t >> u >> v;
+        if (t == 0) {
+            u = dsu_find(u), v = dsu_find(v);
+            if (u != v) {
+                dsu_unite(u, v);
+            }
+        } else {
+            u = dsu_find(u), v = dsu_find(v);
+            int ans = u == v;
+            cout << ans << endl;
         }
     }
     return 0;
