@@ -32,30 +32,49 @@ vector<int> tin, tout;
 vector<vector<int>> up;
 int lg;
 
-int query(int node_prev, int node, int d, int val, int ans) {
+int get_left(int node) {
+    if (node == -1) {
+        return -1;
+    }
+    return nodes[node].left;
+}
+
+int get_right(int node) {
+    if (node == -1) {
+        return -1;
+    }
+    return nodes[node].right;
+}
+
+int get_ct(int node) {
+    if (node == -1) {
+        return 0;
+    }
+    return nodes[node].ct;
+}
+
+int query(int node_l, int node_r, int d, int val, int ans) {
     if (d == -1) {
         return ans;
     }
     int c = val & (1 << d);
     if (c == 0) {
-        int ct = (nodes[node].right == -1 ? 0 : nodes[nodes[node].right].ct);
-        if (node_prev != -1) {
-            ct -= (nodes[node_prev].right == -1 ? 0 : nodes[nodes[node_prev].right].ct);
-        }
+        int l = get_right(node_l), r = get_right(node_r);
+        int ct = get_ct(r) - get_ct(l);
+
         if (ct > 0) {
-            return query((node_prev == -1 ? -1 : nodes[node_prev].right), nodes[node].right, d - 1, val, ans ^ (1 << d));
+            return query(l, r, d - 1, val, ans ^ (1 << d));
         } else {
-            return query((node_prev == -1 ? -1 : nodes[node_prev].left), nodes[node].left, d - 1, val, ans);
+            return query(get_left(node_l), get_left(node_r), d - 1, val, ans);
         }
     } else {
-        int ct = (nodes[node].left == -1 ? 0 : nodes[nodes[node].left].ct);
-        if (node_prev != -1) {
-            ct -= (nodes[node_prev].left == -1 ? 0 : nodes[nodes[node_prev].left].ct);
-        }
+        int l = get_left(node_l), r = get_left(node_r);
+        int ct = get_ct(r) - get_ct(l);
+
         if (ct > 0) {
-            return query((node_prev == -1 ? -1 : nodes[node_prev].left), nodes[node].left, d - 1, val, ans ^ (1 << d));
+            return query(l, r, d - 1, val, ans ^ (1 << d));
         } else {
-            return query((node_prev == -1 ? -1 : nodes[node_prev].right), nodes[node].right, d - 1, val, ans);
+            return query(get_right(node_l), get_right(node_r), d - 1, val, ans);
         }
     }
 }
@@ -70,20 +89,20 @@ void add(int node_prev, int node, int d, int val) {
         nodes[idx++] = Node();
         nodes[nodes[node].left].ct = 1;
         if (node_prev != -1) {
-            nodes[nodes[node].left].ct += nodes[nodes[node_prev].left].ct;
+            nodes[nodes[node].left].ct += (nodes[node_prev].left == -1 ? 0 : nodes[nodes[node_prev].left].ct);
             nodes[node].right = nodes[node_prev].right;
         }
-        add((node_prev == -1 ? -1 : nodes[node_prev].left), nodes[node].left, d - 1, val);
+        add(get_left(node_prev), nodes[node].left, d - 1, val);
         return;
     } else {
         nodes[node].right = idx;
         nodes[idx++] = Node();
         nodes[nodes[node].right].ct = 1;
         if (node_prev != -1) {
-            nodes[nodes[node].right].ct += nodes[nodes[node_prev].right].ct;
+            nodes[nodes[node].right].ct += (nodes[node_prev].right == -1 ? 0 : nodes[nodes[node_prev].right].ct);
             nodes[node].left = nodes[node_prev].left;
         }
-        add((node_prev == -1 ? -1 : nodes[node_prev].right), nodes[node].right, d - 1, val);
+        add(get_right(node_prev), nodes[node].right, d - 1, val);
         return;
     }
 }

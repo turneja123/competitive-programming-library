@@ -31,7 +31,6 @@ public:
                 break;
             }
             nums[j] = x * m;
-            mx = max(mx, x);
             pq.pop();
             pq.push(make_pair(-nums[j], -j));
             k--;
