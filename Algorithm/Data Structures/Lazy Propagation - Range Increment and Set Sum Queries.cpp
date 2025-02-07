@@ -1,4 +1,4 @@
-//solution for https://cses.fi/problemset/task/1735
+//https://cses.fi/problemset/task/1735
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -11,33 +11,47 @@ using namespace __gnu_pbds;
 
 const int N = 2e5 + 5;
 
-ll a[N];
-ll segtree[4 * N];
-ll lazy[4 * N];
-ll setVal[4 * N];
-bool setValid[4 * N];
+struct Node {
+    bool setValid;
+    long long setVal;
+    long long sum;
+    long long lazy;
+    Node() {
+        setValid = 0, setVal = 0, lazy = 0;
+    }
+    Node(long long x) : setValid(0), setVal(0), sum(x), lazy(0) {}
+};
+
+int a[N];
+Node segtree[4 * N];
+
+Node combine(Node left, Node right) {
+    Node node = Node();
+    node.sum = left.sum + right.sum;
+    return node;
+}
 
 void compose(int parent, int child) {
-    if (setValid[parent]) {
-        setValid[child] = 1;
-        setVal[child] = setVal[parent];
-        lazy[child] = lazy[parent];
+    if (segtree[parent].setValid) {
+        segtree[child].setValid = 1;
+        segtree[child].setVal = segtree[parent].setVal;
+        segtree[child].lazy = segtree[parent].lazy;
     } else {
-        lazy[child] += lazy[parent];
+        segtree[child].lazy += segtree[parent].lazy;
     }
 }
 
 void apply(int node, int l, int r) {
-    if (setValid[node]) {
-        segtree[node] = (r - l + 1) * setVal[node];
+    if (segtree[node].setValid) {
+        segtree[node].sum = segtree[node].setVal * (r - l + 1);
     }
-    segtree[node] += (r - l + 1) * lazy[node];
+    segtree[node].sum += segtree[node].lazy * (r - l + 1);
     if (l != r) {
         compose(node, 2 * node + 1);
         compose(node, 2 * node + 2);
     }
-    setValid[node] = false;
-    lazy[node] = 0;
+    segtree[node].setValid = false;
+    segtree[node].lazy = 0;
 }
 
 void incUpdate(int node, int l, int r, int lq, int rq, ll add) {
@@ -45,7 +59,7 @@ void incUpdate(int node, int l, int r, int lq, int rq, ll add) {
         return;
     }
     if (l >= lq && r <= rq) {
-        lazy[node] += add;
+        segtree[node].lazy += add;
         return;
     }
     apply(node, l, r);
@@ -54,7 +68,7 @@ void incUpdate(int node, int l, int r, int lq, int rq, ll add) {
     incUpdate(node * 2 + 2, mid + 1, r, lq, rq, add);
     apply(2 * node + 1, l, mid);
     apply(2 * node + 2, mid + 1, r);
-    segtree[node] = segtree[node * 2 + 1] + segtree[node * 2 + 2];
+    segtree[node] = combine(segtree[2 * node + 1], segtree[2 * node + 2]);
 }
 
 void setUpdate(int node, int l, int r, int lq, int rq, ll val) {
@@ -62,9 +76,9 @@ void setUpdate(int node, int l, int r, int lq, int rq, ll val) {
         return;
     }
     if (l >= lq && r <= rq) {
-        setValid[node] = true;
-        setVal[node] = val;
-        lazy[node] = 0;
+        segtree[node].setValid = true;
+        segtree[node].setVal = val;
+        segtree[node].lazy = 0;
         return;
     }
     apply(node, l, r);
@@ -73,16 +87,16 @@ void setUpdate(int node, int l, int r, int lq, int rq, ll val) {
     setUpdate(node * 2 + 2, mid + 1, r, lq, rq, val);
     apply(2 * node + 1, l, mid);
     apply(2 * node + 2, mid + 1, r);
-    segtree[node] = segtree[node * 2 + 1] + segtree[node * 2 + 2];
+    segtree[node] = combine(segtree[2 * node + 1], segtree[2 * node + 2]);
 }
 
-ll getSum(int l, int r, int lq, int rq, int node) {
+long long getSum(int l, int r, int lq, int rq, int node) {
     if (l > rq || lq > r) {
         return 0;
     }
     apply(node, l, r);
     if (l >= lq && r <= rq) {
-        return segtree[node];
+        return segtree[node].sum;
     }
     int mid = (l + r) / 2;
     return getSum(l, mid, lq, rq, 2 * node + 1) +
@@ -100,7 +114,7 @@ void build(int l, int r, int node) {
     int mid = (l + r) / 2;
     build(l, mid, node * 2 + 1);
     build(mid + 1, r, node * 2 + 2);
-    segtree[node] = segtree[node * 2 + 1] + segtree[node * 2 + 2];
+    segtree[node] = combine(segtree[2 * node + 1], segtree[2 * node + 2]);
 }
 
 int main() {
@@ -115,15 +129,12 @@ int main() {
         int t;
         cin >> t;
         if (t == 1 || t == 2) {
-            int l, r;
-            cin >> l >> r;
+            int l, r, u;
+            cin >> l >> r >> u;
             l--, r--;
-            ll u;
-            cin >> u;
             if (t == 1) {
                 incUpdate(0, 0, n - 1, l, r, u);
-            }
-            else {
+            } else {
                 setUpdate(0, 0, n - 1, l, r, u);
             }
         }
