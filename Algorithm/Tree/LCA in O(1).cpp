@@ -13,7 +13,7 @@ const int N = 5e5 + 5;
 const int K = 21;
 
 vector<int> adj[N];
-pair<int, int> tour[2 * N];
+int tour[2 * N];
 
 int depth[N];
 int pos[N];
@@ -23,8 +23,9 @@ int mn[K][2 * N];
 
 void build(int n) {
     for (int i = 1; i <= n; i++) {
-        table[0][i] = tour[i - 1].second;
-        mn[0][i] = tour[i - 1].first;
+        int u = tour[i - 1];
+        table[0][i] = depth[u];
+        mn[0][i] = u;
     }
     for (int k = 1; k < K; k++) {
         for (int i = 1; i + (1 << k) - 1 <= n; i++) {
@@ -49,14 +50,23 @@ int query(int l, int r) {
     return mn[k][r - (1 << k) + 1];
 }
 
+int lca(int a, int b) {
+    int l = pos[a];
+    int r = pos[b];
+    if (l > r) {
+        swap(l, r);
+    }
+    return query(l, r);
+}
+
 void dfs(int u, int p) {
     pos[u] = timer;
-    tour[timer++] = make_pair(u, depth[u]);
+    tour[timer++] = u;
     for (int v : adj[u]) {
         if (v != p) {
             depth[v] = depth[u] + 1;
             dfs(v, u);
-            tour[timer++] = make_pair(u, depth[u]);
+            tour[timer++] = u;
         }
     }
 }
@@ -76,12 +86,7 @@ int main() {
     for (int i = 0; i < q; i++) {
         int a, b;
         cin >> a >> b;
-        int l = pos[a];
-        int r = pos[b];
-        if (l > r) {
-            swap(l, r);
-        }
-        cout << query(l, r) << endl;
+        cout << lca(a, b) << endl;
     }
     return 0;
 }

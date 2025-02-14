@@ -1,4 +1,4 @@
-//https://judge.yosupo.jp/problem/enumerate_palindromes
+//https://acm.timus.ru/problem.aspx?space=1&num=2060
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -17,6 +17,11 @@ const long long Q = 53, INV_Q = 56603774;
 
 long long pw_p[N], pw_q[N];
 long long inv_p[N], inv_q[N];
+
+int diff_pref[N];
+int diff_suf[N];
+int ct_pref[N];
+int ct_suf[N];
 
 pair<long long, long long> pref[N], suf[N];
 
@@ -72,7 +77,11 @@ int main() {
                 r = mid - 1;
             }
         }
-        cout << 1 + 2 * ans << " ";
+        diff_pref[i]++;
+        diff_pref[i + ans + 1]--;
+        diff_suf[i - ans]++;
+        diff_suf[i + 1]--;
+
         if (i != n - 1) {
             if (s[i] == s[i + 1]) {
                 int l = 0, r = min(i, n - 1 - (i + 1)), ans = 0;
@@ -87,12 +96,24 @@ int main() {
                         r = mid - 1;
                     }
                 }
-                cout << 2 + 2 * ans << " ";
-            } else {
-
-                cout << 0 << " ";
+                diff_pref[i + 1]++;
+                diff_pref[i + 1 + ans + 1]--;
+                diff_suf[i - ans]++;
+                diff_suf[i + 1]--;
             }
         }
     }
+    int s_pref = 0, s_suf = 0;
+    for (int i = 0; i < n; i++) {
+        s_pref += diff_pref[i];
+        s_suf += diff_suf[i];
+        ct_pref[i] = s_pref;
+        ct_suf[i] = s_suf;
+    }
+    long long ans = 0;
+    for (int i = 0; i < n - 1; i++) {
+        ans += (long long)ct_pref[i] * ct_suf[i + 1];
+    }
+    cout << ans;
     return 0;
 }
