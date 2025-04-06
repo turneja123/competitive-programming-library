@@ -1,4 +1,4 @@
-//solution for https://cses.fi/problemset/task/1688/
+//https://cses.fi/problemset/task/1688/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -10,24 +10,26 @@ using namespace __gnu_pbds;
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
 const int N = 2e5 + 5;
+const int K = 18;
 
-list<int> adj[N];
-vector<int> tin, tout;
-vector<vector<int>> up;
-int timer = 0, lg;
+vector<int> adj[N];
+int tin[N];
+int tout[N];
+int up[K][N];
+int timer = 0;
 
-void dfs(int v, int p) {
-    tin[v] = timer++;
-    up[v][0] = p;
-    for (int i = 1; i <= lg; i++) {
-        up[v][i] = up[up[v][i - 1]][i - 1];
+void dfs(int u, int p) {
+    tin[u] = timer++;
+    up[0][u] = p;
+    for (int k = 1; k < K; k++) {
+        up[k][u] = up[k - 1][up[k - 1][u]];
     }
-    for (int u : adj[v]) {
-        if (u != p) {
-            dfs(u, v);
+    for (int v : adj[u]) {
+        if (v != p) {
+            dfs(v, u);
         }
     }
-    tout[v] = timer++;
+    tout[u] = timer++;
 }
 
 bool is_ancestor(int u, int v) {
@@ -41,22 +43,18 @@ int lca(int u, int v) {
     if (is_ancestor(v, u)) {
         return v;
     }
-    for (int i = lg; i >= 0; --i) {
-        if (!is_ancestor(up[u][i], v)) {
-            u = up[u][i];
+    for (int k = K - 1; k >= 0; k--) {
+        if (!is_ancestor(up[k][u], v)) {
+            u = up[k][u];
         }
     }
-    return up[u][0];
+    return up[0][u];
 }
 
 int main() {
     IOS;
     int n, q;
     cin >> n >> q;
-    lg = ceil(log2(n));
-    up.assign(n, vector<int>(lg + 1));
-    tin.resize(n);
-    tout.resize(n);
     for (int i = 1; i < n; i++) {
         int v;
         cin >> v;
