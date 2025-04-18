@@ -1,4 +1,5 @@
 //https://arena.petlja.org/sr-Latn-RS/competition/bubblecup17finals#tab_136693
+#pragma GCC optimize("Ofast,fast-math")
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -25,32 +26,17 @@ int xb[2 * N][2 * N];
 
 int ya[2 * N][2 * N];
 int yb[2 * N][2 * N];
+
+int xa_nx[2 * N][2 * N];
+int xb_nx[2 * N][2 * N];
+
+int ya_nx[2 * N][2 * N];
+int yb_nx[2 * N][2 * N];
+
 int ans[N][N];
 int dp[N][N][N];
 
 vector<pair<int, int>> moves{{1, 1}, {-1, 1}, {-1, -1}, {1, -1}};
-
-int dfs(int i, int j, int n, int k, int f) {
-    auto [x, y] = orig[i][j];
-    if (dp[x][y][k] != -1 && dp[x][y][k] != n) {
-        return dp[x][y][k];
-    }
-    dp[x][y][k] = (f == 0 || f == 1 ? i : j);
-    if (k == 0) {
-        return dp[x][y][k];
-    }
-
-    for (auto [du, dv] : moves) {
-        if (i + du >= 0 && i + du < n && j + dv >= 0 && j + dv < n && A[i + du][j + dv] == '.') {
-            if (f == 0 || f == 2) {
-                dp[x][y][k] = min(dp[x][y][k], dfs(i + du, j + dv, n, k - 1, f));
-            } else {
-                dp[x][y][k] = max(dp[x][y][k], dfs(i + du, j + dv, n, k - 1, f));
-            }
-        }
-    }
-    return dp[x][y][k];
-}
 
 
 int main() {
@@ -73,13 +59,46 @@ int main() {
             orig[x][y] = make_pair(i, j);
         }
     }
-
     for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
             xa[i][j] = dim, ya[i][j] = dim;
             xb[i][j] = -1, yb[i][j] = -1;
+            if (A[i][j] != '-' && A[i][j] != '#') {
+                xa[i][j] = i, xb[i][j] = i;
+                ya[i][j] = j, yb[i][j] = j;
+            }
         }
     }
+    for (int t = 0; t < k; t++) {
+        for (int i = 0; i < dim; i++) {
+            for (int j = 0; j < dim; j++) {
+                xa_nx[i][j] = xa[i][j], ya_nx[i][j] = ya[i][j];
+                xb_nx[i][j] = xb[i][j], yb_nx[i][j] = yb[i][j];
+            }
+        }
+        for (int i = 0; i < dim; i++) {
+            for (int j = 0; j < dim; j++) {
+                if (A[i][j] == '-' || A[i][j] == '#') {
+                    continue;
+                }
+                for (auto [dx, dy] : moves) {
+                    if (i + dx >= 0 && i + dx < dim && j + dy >= 0 && j + dy < dim && (A[i + dx][j + dy] == '.' || A[i + dx][j + dy] == 'C')) {
+                        xa_nx[i][j] = min(xa_nx[i][j], xa[i + dx][j + dy]);
+                        ya_nx[i][j] = min(ya_nx[i][j], ya[i + dx][j + dy]);
+                        xb_nx[i][j] = max(xb_nx[i][j], xb[i + dx][j + dy]);
+                        yb_nx[i][j] = max(yb_nx[i][j], yb[i + dx][j + dy]);
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < dim; i++) {
+            for (int j = 0; j < dim; j++) {
+                xa[i][j] = xa_nx[i][j], ya[i][j] = ya_nx[i][j];
+                xb[i][j] = xb_nx[i][j], yb[i][j] = yb_nx[i][j];
+            }
+        }
+    }
+
     for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
             if (A[i][j] == 'C' && !vis_nexus[i][j]) {
@@ -129,86 +148,6 @@ int main() {
             }
         }
     }
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            for (int t = 0; t <= k; t++) {
-                dp[i][j][t] = dim;
-            }
-        }
-    }
-    for (int i = 0; i < dim; i++) {
-        for (int j = 0; j < dim; j++) {
-            if (A[i][j] != '.') {
-                continue;
-            }
-            auto [x, y] = orig[i][j];
-            if (dp[x][y][k] == dim) {
-                dp[x][y][k] = dfs(i, j, dim, k, 0);
-            }
-            xa[i][j] = min(xa[i][j], dp[x][y][k]);
-        }
-    }
-    //
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            for (int t = 0; t <= k; t++) {
-                dp[i][j][t] = -1;
-            }
-        }
-    }
-    for (int i = 0; i < dim; i++) {
-        for (int j = 0; j < dim; j++) {
-            if (A[i][j] != '.') {
-                continue;
-            }
-            auto [x, y] = orig[i][j];
-            if (dp[x][y][k] == -1) {
-                dp[x][y][k] = dfs(i, j, dim, k, 1);
-            }
-            xb[i][j] = max(xb[i][j], dp[x][y][k]);
-        }
-    }
-    //
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            for (int t = 0; t <= k; t++) {
-                dp[i][j][t] = dim;
-            }
-        }
-    }
-    for (int i = 0; i < dim; i++) {
-        for (int j = 0; j < dim; j++) {
-            if (A[i][j] != '.') {
-                continue;
-            }
-            auto [x, y] = orig[i][j];
-            if (dp[x][y][k] == dim) {
-                dp[x][y][k] = dfs(i, j, dim, k, 2);
-            }
-            ya[i][j] = min(ya[i][j], dp[x][y][k]);
-        }
-    }
-    //
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            for (int t = 0; t <= k; t++) {
-                dp[i][j][t] = -1;
-            }
-        }
-    }
-    for (int i = 0; i < dim; i++) {
-        for (int j = 0; j < dim; j++) {
-            if (A[i][j] != '.') {
-                continue;
-            }
-            auto [x, y] = orig[i][j];
-            if (dp[x][y][k] == -1) {
-                dp[x][y][k] = dfs(i, j, dim, k, 3);
-            }
-            yb[i][j] = max(yb[i][j], dp[x][y][k]);
-        }
-    }
-    //
     for (int i = 0; i < dim; i++) {
         for (int j = 0; j < dim; j++) {
             if (A[i][j] == '-') {
