@@ -93,6 +93,13 @@ int main() {
                 ct++;
             }
         }
+        while (l > lq) {
+            l--;
+            freq[a[l]]++;
+            if (freq[a[l]] == 1) {
+                ct++;
+            }
+        }
         while (r > rq) {
             freq[a[r]]--;
             if (freq[a[r]] == 0) {
@@ -106,13 +113,6 @@ int main() {
                 ct--;
             }
             l++;
-        }
-        while (l > lq) {
-            l--;
-            freq[a[l]]++;
-            if (freq[a[l]] == 1) {
-                ct++;
-            }
         }
         ans[cur] = ct;
     }

@@ -53,6 +53,8 @@ struct Node {
     }
 };
 
+Node* go[N];
+
 struct LCT {
     vector<Node> a;
     LCT(int n) {
@@ -75,9 +77,6 @@ struct LCT {
             (g->r == p ? g->r : g->l) = c;
         }
 
-        p->push();
-        c->push();
-
         if (p->l == c) {
             p->l = c->r;
             c->r = p;
@@ -99,6 +98,17 @@ struct LCT {
     }
 
     void splay(Node* c) {
+        Node* y = c;
+        int j = 0;
+        go[j++] = y;
+        while (!y->is_root()) {
+            y = y->p;
+            go[j++] = y;
+        }
+        while (j) {
+            go[--j]->push();
+        }
+
         while (!c->is_root()) {
             Node* p = c->p;
             Node* g = p->p;
