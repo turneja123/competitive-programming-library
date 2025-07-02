@@ -1,4 +1,4 @@
-//solution for https://open.kattis.com/problems/convexhull
+//https://cses.fi/problemset/task/2195/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -7,133 +7,93 @@ using namespace __gnu_pbds;
 
 #define endl "\n"
 #define ll long long
-#define f first
-#define s second
-#define pii pair<int, int>
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int INF = 1e9;
+const int N = 2e5 + 5;
+const long long INF = 1e18;
 
-pair<int, int> p0;
+struct PT {
+    ll x, y;
+    PT() { x = 0, y = 0; }
+    PT(ll x, ll y) : x(x), y(y) {}
+    PT operator + (const PT &a) const { return PT(x + a.x, y + a.y); }
+    PT operator - (const PT &a) const { return PT(x - a.x, y - a.y); }
+    bool operator == (const PT &a) const { return x == a.x && y == a.y; }
+};
 
-int distsq(pii p1, pii p2) {
-    return (p1.f - p2.f) * (p1.f - p2.f ) + (p1.s - p2.s) * (p1.s - p2.s);
+PT p0;
+
+ll distsq(PT p1, PT p2) {
+    return (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
 }
 
-int orientation(pii p1, pii p2, pii p3) {
-    int val = (p2.s - p1.s) * (p3.f - p2.f) - (p2.f - p1.f) * (p3.s - p2.s);
-    if (val == 0) return 0;
-    if (val > 0) return 1;
-    if (val < 0) return 2;
+int orientation(PT p1, PT p2, PT p3) {
+    long long cross = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
+    if (cross > 0) return 1; // ccw
+    if (cross < 0) return -1; // cw
+    return 0; // collinear
 }
 
-bool compare(pii p1, pii p2) {
+bool cw(PT p1, PT p2, PT p3, bool include_collinear) {
+    int o = orientation(p1, p2, p3);
+    return o < 0 || (include_collinear && o == 0);
+}
+
+bool compare(PT p1, PT p2) {
     int o = orientation(p0, p1, p2);
-    if (o == 0) {
-        int dist1 = distsq(p0, p1);
-        int dist2 = distsq(p0, p2);
-        if (dist2 >= dist1) {
-            return 1;
-        } else {
-            return 0;
+    if (o > 0) return false;
+    if (o < 0) return true;
+    return distsq(p0, p1) < distsq(p0, p2);
+}
+
+vector<PT> convex_hull(vector<PT> p, bool include_collinear) {
+    int n = p.size();
+    ll ymn = INF, xmn = INF;
+    int pos = -1;
+    for (int i = 0; i < n; i++) {
+        if (p[i].y < ymn) {
+            ymn = p[i].y;
+            xmn = p[i].x;
+            pos = i;
+        } else if (p[i].y == ymn && p[i].x < xmn) {
+            xmn = p[i].x;
+            pos = i;
         }
     }
-    if (o == 1) return 0;
-    if (o == 2) return 1;
-}
+    swap(p[0], p[pos]);
+    p0 = p[0];
+    sort(p.begin() + 1, p.end(), compare); //sort cw
+    if (include_collinear) {
+        int i = (int)p.size() - 1;
+        while (i >= 0 && orientation(p0, p[i], p.back()) == 0) i--;
+        reverse(p.begin() + i + 1, p.end());
+    }
 
-pii nextToTop(stack<pii> s) {
-    pii temp = s.top();
-    s.pop();
-    pii ret = s.top();
-    s.push(temp);
-    return ret;
+    vector<PT> s;
+    for (int i = 0; i < n; i++) {
+        while (s.size() > 1 && !cw(s[s.size() - 2], s.back(), p[i], include_collinear)) {
+            s.pop_back();
+        }
+        s.push_back(p[i]);
+    }
+    reverse(s.begin(), s.end()); //ccw
+    return s;
 }
 
 int main() {
     IOS;
-    while (1) {
-        int n;
-        cin >> n;
-        set<pii> st;
-        vector<pii> v;
-        for (int i = 0; i < n; i++) {
-            int x, y;
-            cin >> x >> y;
-            pii pr = {x, y};
-            if (st.find(pr) == st.end()) {
-                st.insert(pr);
-                v.push_back(pr);
-            }
-        }
-        n = v.size();
-        if (n < 3) {
-            cout << n << endl;
-            for (int i = 0; i < n; i++) {
-                cout << v[i].f << " " << v[i].s << endl;
-            }
-            continue;
-        }
-        pii p[n];
-        for (int i = 0; i < n; i++) {
-            p[i] = v[i];
-        }
-        int ymn = INF;
-        int xmn = INF;
-        int pos = -1;
-        for (int i = 0; i < n; i++) {
-            if (p[i].s < ymn) {
-                ymn = p[i].s;
-                xmn = p[i].f;
-                pos = i;
-            } else if (p[i].s == ymn && p[i].f < xmn) {
-                xmn = p[i].f;
-                pos = i;
-            }
-        }
-        swap(p[0], p[pos]);
-        p0 = p[0];
-        sort(p + 1, p + n, compare);
-        int m = 1;
-        for (int i = 1; i < n ; i++) {
-            while (i < n - 1 && orientation(p0, p[i], p[i + 1]) == 0) {
-                i++;
-            }
-            p[m] = p[i];
-            m++;
-        }
-        if (m < 3) {
-            cout << 2 << endl;
-            cout << p[0].f << " " << p[0].s << endl;
-            cout << p[n - 1].f << " " << p[n - 1].s << endl;
-            continue;
-        }
-        stack <pii> s;
-        s.push(p[0]);
-        s.push(p[1]);
-        s.push(p[2]);
-        for (int i = 3; i < m; i++) {
-            pii _p0 = nextToTop(s);
-            pii p1 = s.top();
-            pii p2 = p[i];
-            while(orientation(_p0, p1, p2) != 2) {
-                s.pop();
-                _p0 = nextToTop(s);
-                p1 = s.top();
-            }
-            s.push(p[i]);
-        }
-        vector<pii> out;
-        int sz = s.size();
-        for (int i = 0; i < sz; i++) {
-            out.push_back(s.top());
-            s.pop();
-        }
-        cout << out.size() << endl;
-        for (int i = out.size() - 1; i >= 0; i--) {
-            cout << out[i].first << " " << out[i].second << endl;
-        }
-        break;
+    int n;
+    cin >> n;
+    vector<PT> p(n);
+    for (int i = 0; i < n; i++) {
+        int x, y;
+        cin >> x >> y;
+        p[i] = PT(x, y);
+    }
+    vector<PT> hull = convex_hull(p, true);
+    cout << hull.size() << endl;
+    for (auto p : hull) {
+        cout << p.x << " " << p.y << endl;
     }
     return 0;
 }

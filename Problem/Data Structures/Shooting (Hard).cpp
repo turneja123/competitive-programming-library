@@ -6,47 +6,11 @@ using namespace std;
 using namespace __gnu_pbds;
 
 #define endl "\n"
+#define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-int calc(int f, int i, int j, int a) {
-    if (a <= 0) {
-        return 0;
-    }
-    int player = 0;
-    if (f >= 4) {
-        player = 1;
-    }
-    if (player == 0 && a == 1) {
-        return 0;
-    }
-    if (player == 1 && a == 2) {
-        return 0;
-    }
-    if (f == 0 || f == 1 || f == 4 || f == 5) {
-        return 1;
-    }
-    if (f == 2 || f == 6) {
-        return j;
-    }
-    return i;
-}
-
-void preprocess(int n, int m, vector<vector<int>> &a, vector<vector<long long>> &pref, int f) {
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            int add = calc(f, i, j, a[i][j]);
-            pref[i][j] = add + (i > 0 ? pref[i - 1][j] : 0) + (j > 0 ? pref[i][j - 1] : 0) - (i > 0 && j > 0 ? pref[i - 1][j - 1] : 0);
-        }
-    }
-    return;
-}
-
-long long query(int x1, int y1, int x2, int y2, vector<vector<long long>> &pref) {
-    if (y1 > y2 || x1 > x2) {
-        return 0;
-    }
-    int ans = pref[x2][y2] - (x1 > 0 ? pref[x1 - 1][y2] : 0) - (y1 > 0 ? pref[x2][y1 - 1] : 0) + (x1 > 0 && y1 > 0 ? pref[x1 - 1][y1 - 1] : 0);
-    return ans;
+long long query(int l, int r, int k, vector<vector<long long>> &pref) {
+    return pref[k][r] - (l == 0 ? 0 : pref[k][l - 1]);
 }
 
 int main() {
@@ -54,55 +18,53 @@ int main() {
     int t;
     cin >> t;
     while (t--) {
-
         int n, m;
         cin >> n >> m;
         int dim = n + m - 1;
         vector<vector<int>> a(n, vector<int>(m));
-        vector<vector<int>> A(dim, vector<int>(dim));
-        vector<vector<pair<int, int>>> orig(dim, vector<pair<int, int>>(dim));
-        for (int i = 0; i < dim; i++) {
-            for (int j = 0; j < dim; j++) {
-                A[i][j] = -1;
-            }
-        }
+        vector<vector<pair<int, int>>> A(n, vector<pair<int, int>>(m));
+        vector<vector<long long>> pref(8, vector<long long>(dim, 0)); //ctxa,ctya,sumxa,sumya,ctxb,ctyb,sumxb,sumyb
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
                 cin >> a[i][j];
                 int x = i + j, y = i - j + m - 1;
-                A[x][y] = a[i][j];
-                orig[x][y] = make_pair(i, j);
+                A[i][j] = make_pair(x, y);
+                if (a[i][j] == 1 || a[i][j] == 3) {
+                    pref[0][x]++;
+                    pref[2][x] += x;
+                    pref[1][y]++;
+                    pref[3][y] += y;
+                }
+                if (a[i][j] == 2 || a[i][j] == 3) {
+                    pref[4][x]++;
+                    pref[6][x] += x;
+                    pref[5][y]++;
+                    pref[7][y] += y;
+                }
             }
         }
-        vector<vector<long long>> pref[8]; //ctxa,ctya,sumxa,sumya,ctxb,ctyb,sumxb,sumyb
         for (int k = 0; k < 8; k++) {
-            pref[k].resize(dim, vector<long long>(dim, 0));
-            preprocess(dim, dim, A, pref[k], k);
-        }
-        vector<vector<long long>> ansa(n, vector<long long>(m, 0));
-        vector<vector<long long>> ansb(n, vector<long long>(m, 0));
-        for (int i = 0; i < dim; i++) {
-            for (int j = 0; j < dim; j++) {
-                if (A[i][j] == -1) {
-                    continue;
-                }
-                auto [x, y] = orig[i][j];
-                ansa[x][y] += (long long)j * query(0, 0, dim - 1, j, pref[0]) - query(0, 0, dim - 1, j, pref[2]);
-                ansa[x][y] += (long long)i * query(0, 0, i, dim - 1, pref[1]) - query(0, 0, i, dim - 1, pref[3]);
-
-                ansa[x][y] += query(0, j + 1, dim - 1, dim - 1, pref[2]) - (long long)j * query(0, j + 1, dim - 1, dim - 1, pref[0]);
-                ansa[x][y] += query(i + 1, 0, dim - 1, dim - 1, pref[3]) - (long long)i * query(i + 1, 0, dim - 1, dim - 1, pref[1]);
-
-                ansb[x][y] += (long long)j * query(0, 0, dim - 1, j, pref[4]) - query(0, 0, dim - 1, j, pref[6]);
-                ansb[x][y] += (long long)i * query(0, 0, i, dim - 1, pref[5]) - query(0, 0, i, dim - 1, pref[7]);
-
-                ansb[x][y] += query(0, j + 1, dim - 1, dim - 1, pref[6]) - (long long)j * query(0, j + 1, dim - 1, dim - 1, pref[4]);
-                ansb[x][y] += query(i + 1, 0, dim - 1, dim - 1, pref[7]) - (long long)i * query(i + 1, 0, dim - 1, dim - 1, pref[5]);
+            for (int i = 1; i < dim; i++) {
+                pref[k][i] += pref[k][i - 1];
             }
         }
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < m; j++) {
-                cout << abs(ansa[i][j] - ansb[i][j]) / 2 << " ";
+                auto [x, y] = A[i][j];
+                long long ans = 0;
+                ans += query(0, x, 0, pref) * x - query(0, x, 2, pref);
+                ans += query(x, dim - 1, 2, pref) - query(x, dim - 1, 0, pref) * x;
+
+                ans += query(0, y, 1, pref) * y - query(0, y, 3, pref);
+                ans += query(y, dim - 1, 3, pref) - query(y, dim - 1, 1, pref) * y;
+
+                ans -= query(0, x, 4, pref) * x - query(0, x, 6, pref);
+                ans -= query(x, dim - 1, 6, pref) - query(x, dim - 1, 4, pref) * x;
+
+                ans -= query(0, y, 5, pref) * y - query(0, y, 7, pref);
+                ans -= query(y, dim - 1, 7, pref) - query(y, dim - 1, 5, pref) * y;
+
+                cout << abs(ans) / 2 << " ";
             }
             cout << endl;
         }
