@@ -9,7 +9,8 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 5e5 + 5;
+const int N = 2e5 + 5;
+const int SQ = 450;
 
 struct custom_hash {
     static uint64_t splitmix64(uint64_t x) {
@@ -27,14 +28,13 @@ struct custom_hash {
 
 int a[N];
 int freq[N];
-int sz;
 tuple<int, int, int> queries[N];
 int ans[N];
 gp_hash_table<int, int, custom_hash> pos;
 
 bool comp(tuple<int, int, int> a, tuple<int, int, int> b) {
-    int block1 = get<0>(a) / sz;
-    int block2 = get<0>(b) / sz;
+    int block1 = get<0>(a) / SQ;
+    int block2 = get<0>(b) / SQ;
     if (block1 != block2) {
         return block1 < block2;
     }
@@ -43,14 +43,26 @@ bool comp(tuple<int, int, int> a, tuple<int, int, int> b) {
     return r1 < r2;
 }
 
+int ct = 0;
+
+void add(int x) {
+    freq[x]++;
+    if (freq[x] == 1) {
+        ct++;
+    }
+}
+
+void rem(int x) {
+    freq[x]--;
+    if (freq[x] == 0) {
+        ct--;
+    }
+}
+
 int main() {
     IOS;
     int n, q;
     cin >> n >> q;
-    sz = sqrt(n);
-    if (sz * sz != n) {
-        sz++;
-    }
     for (int i = 0; i < n; i++) {
         cin >> a[i];
         if (pos.find(a[i]) == pos.end()) {
@@ -69,38 +81,23 @@ int main() {
     sort(queries, queries + q, comp);
     int l = 0;
     int r = -1;
-    int ct = 0;
     for (int i = 0; i < q; i++) {
-        int cur = get<2>(queries[i]);
-        int lq = get<0>(queries[i]);
-        int rq = get<1>(queries[i]);
+        auto [lq, rq, cur] = queries[i];
         while (r < rq) {
             r++;
-            freq[a[r]]++;
-            if (freq[a[r]] == 1) {
-                ct++;
-            }
-        }
-        while (r > rq) {
-            freq[a[r]]--;
-            if (freq[a[r]] == 0) {
-                ct--;
-            }
-            r--;
-        }
-        while (l < lq) {
-            freq[a[l]]--;
-            if (freq[a[l]] == 0) {
-                ct--;
-            }
-            l++;
+            add(a[r]);
         }
         while (l > lq) {
             l--;
-            freq[a[l]]++;
-            if (freq[a[l]] == 1) {
-                ct++;
-            }
+            add(a[l]);
+        }
+        while (r > rq) {
+            rem(a[r]);
+            r--;
+        }
+        while (l < lq) {
+            rem(a[l]);
+            l++;
         }
         ans[cur] = ct;
     }
