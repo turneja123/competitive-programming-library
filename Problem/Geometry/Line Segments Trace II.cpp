@@ -1,4 +1,4 @@
-//https://www.hackerearth.com/practice/data-structures/advanced-data-structures/segment-trees/practice-problems/algorithm/do-you-order-queries-27a70fdd/
+//https://cses.fi/problemset/task/3428/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -9,18 +9,20 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 3e5 + 5;
+using ld = long double;
 
-const int L = -1e9, R = 1e9;
-const int MAX = 1e7;
+const int N = 1e5 + 5;
+
+const int L = 0, R = 1e5 + 5;
+const int MAX = 2e6;
 const long long INF = 2e18;
 
 struct Line {
-    long long k, b;
-    long long f(long long x) {
+    ld k, b;
+    ld f(long long x) {
         return k * x + b;
     }
-    Line(long long k, long long b) : k(k), b(b) {}
+    Line(ld k, ld b) : k(k), b(b) {}
 };
 
 struct Node {
@@ -36,8 +38,7 @@ int idx = 0;
 int root = 0;
 
 vector<pair<int, int>> restore;
-vector<tuple<int, int>> queries[N];
-vector<pair<int, int>> segtree[4 * N];
+vector<Line> segtree[4 * N];
 long long ans[N];
 
 int add(int l, int r, int node, Line cur) {
@@ -80,7 +81,7 @@ int add(int l, int r, int node, Line cur) {
     return node;
 }
 
-long long query(int l, int r, int node, long long x) {
+ld query(int l, int r, int node, long long x) {
     if (l > r) {
         return -INF;
     }
@@ -88,7 +89,7 @@ long long query(int l, int r, int node, long long x) {
     if (r - l == 1 && mid == r) {
         mid--;
     }
-    long long ans = nodes[node].line.f(x);
+    ld ans = nodes[node].line.f(x);
     if (l == r) {
         return ans;
     }
@@ -101,7 +102,7 @@ long long query(int l, int r, int node, long long x) {
     return ans;
 }
 
-void upd(int l, int r, int lq, int rq, pair<int, int> edge, int node) {
+void upd(int l, int r, int lq, int rq, Line edge, int node) {
     if (r < lq || l > rq) {
         return;
     }
@@ -117,16 +118,13 @@ void upd(int l, int r, int lq, int rq, pair<int, int> edge, int node) {
 
 void dfs(int l, int r, int node) {
     int ct = 0;
-    for (auto [u, v] : segtree[node]) {
+    for (Line line : segtree[node]) {
         ct++;
         restore.push_back({root, idx});
-        Line line = Line(u, v);
         root = add(L, R, root, line);
     }
     if (l == r) {
-        for (auto [a, ind] : queries[l]) {
-            ans[ind] = query(L, R, root, a);
-        }
+        ans[l] = floor(query(L, R, root, l));
     } else {
         int mid = (l + r) / 2;
         dfs(l, mid, 2 * node + 1);
@@ -144,42 +142,23 @@ int main() {
     IOS;
     nodes[idx] = Node();
     restore.push_back({idx++, idx});
-    int q;
-    cin >> q;
-    map<int, pair<int, int>> mp;
-    vector<tuple<int, int, int, int>> edges;
-    int j = 0;
-    for (int i = 0; i < q; i++) {
-        int t;
-        cin >> t;
-        if (t == 1) {
-            int a, b;
-            cin >> a >> b;
-            mp[i] = make_pair(a, b);
-        } else if (t == 2) {
-            int k;
-            cin >> k;
-            k--;
-            auto it = mp.find(k);
-            edges.push_back(make_tuple(it->second.first, it->second.second, it->first, i - 1));
-            mp.erase(it);
-        } else {
-            int a;
-            cin >> a;
-            queries[i].push_back(make_tuple(a, j++));
+    int n, m;
+    cin >> n >> m;
+    for (int i = 0; i < n; i++) {
+        int x1, y1, x2, y2;
+        cin >> x1 >> y1 >> x2 >> y2;
+        ld k = (x1 == x2 ? 0.0 : (ld)(y2 - y1) / (ld)(x2 - x1));
+        ld b = (ld)y1 - k * (ld)x1;
+        Line cur(k, b);
+        upd(0, m, x1, x2, cur, 0);
+    }
+
+    dfs(0, m, 0);
+    for (int i = 0; i <= m; i++) {
+        if (ans[i] < 0) {
+            ans[i] = -1;
         }
-    }
-    while (mp.size()) {
-        auto [u, v] = mp.begin()->second;
-        edges.push_back(make_tuple(u, v, mp.begin()->first, q));
-        mp.erase(mp.begin());
-    }
-    for (auto [u, v, l, r] : edges) {
-        upd(0, q, l, r, {u, v}, 0);
-    }
-    dfs(0, q, 0);
-    for (int i = 0; i < j; i++) {
-        cout << ans[i] << endl;
+        cout << ans[i] << " ";
     }
     return 0;
 }

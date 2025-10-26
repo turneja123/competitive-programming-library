@@ -1,4 +1,4 @@
-//https://cses.fi/problemset/task/2084/
+//https://www.spoj.com/problems/BUNNIES/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -9,10 +9,10 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 2e5 + 5;
+const int N = 3005;
+const ll INF = 1e18;
 
-int s[N];
-int f[N];
+int a[N];
 
 struct CHT {
   vector<ll> m, b;
@@ -42,7 +42,7 @@ struct CHT {
   //(slope dec+query max), (slope inc+query min) -> x decreasing
   ll query(ll x) {
     if(ptr >= m.size()) ptr = m.size() - 1;
-    while(ptr < m.size() - 1 && f(ptr + 1, x) < f(ptr, x)) ptr++; // > for max
+    while(ptr < m.size() - 1 && f(ptr + 1, x) < f(ptr, x)) ptr++;
     return f(ptr, x);
   }
 
@@ -54,26 +54,40 @@ struct CHT {
   }
 };
 
+CHT cht[N];
+ll dp[N][N];
+
 int main() {
     IOS;
-    int n, x;
-    cin >> n >> x;
-    CHT cht;
-    cht.add(x, 0);
-    for (int i = 0; i < n; i++) {
-        cin >> s[i];
-    }
-    for (int i = 0; i < n; i++) {
-        cin >> f[i];
-    }
-    for (int i = 0; i < n; i++) {
-        //ll dp = cht.bs(0, cht.m.size() - 1, s[i]);
-        ll dp = cht.query(s[i]);
-        cht.add(f[i], dp);
-        if (i == n - 1) {
-            cout << dp;
+    int t;
+    cin >> t;
+    while (t--) {
+        int n, k;
+        cin >> n >> k;
+        for (int i = 0; i < n; i++) {
+            cin >> a[i];
         }
+        sort(a, a + n);
+        reverse(a, a + n);
+        for (int i = 0; i < n; i++) {
+            dp[i][1] = (ll)(i + 1) * a[i];
+            for (int j = 2; j <= min(i + 1, k); j++) {
+                dp[i][j] = (ll)(i + 1) * a[i] + cht[j - 1].bs(0, cht[j - 1].m.size(), a[i]);
+            }
+            for (int j = 1; j <= min(i + 1, k); j++) {
+                cht[j].add(-(i + 1), dp[i][j]);
+            }
+        }
+        ll ans = INF;
+        for (int i = k - 1; i < n; i++) {
+            ans = min(ans, dp[i][k]);
+        }
+        for (int i = 0; i <= k; i++) {
+            cht[i].m.clear();
+            cht[i].b.clear();
+            cht[i].ptr = 0;
+        }
+        cout << ans << endl;
     }
-
     return 0;
 }

@@ -1,4 +1,4 @@
-//https://cses.fi/problemset/task/2084/
+//https://cses.fi/problemset/task/2087/
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -9,10 +9,7 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 2e5 + 5;
-
-int s[N];
-int f[N];
+const int N = 3005;
 
 struct CHT {
   vector<ll> m, b;
@@ -42,7 +39,7 @@ struct CHT {
   //(slope dec+query max), (slope inc+query min) -> x decreasing
   ll query(ll x) {
     if(ptr >= m.size()) ptr = m.size() - 1;
-    while(ptr < m.size() - 1 && f(ptr + 1, x) < f(ptr, x)) ptr++; // > for max
+    while(ptr < m.size() - 1 && f(ptr + 1, x) > f(ptr, x)) ptr++; // > for max
     return f(ptr, x);
   }
 
@@ -54,26 +51,46 @@ struct CHT {
   }
 };
 
+CHT cht_f[N], cht_g[N];
+ll a[N];
+ll pref[N];
+ll pref_rising[N];
+ll pref_falling[N];
+
+ll f[N][N], g[N][N];
+
 int main() {
     IOS;
-    int n, x;
-    cin >> n >> x;
-    CHT cht;
-    cht.add(x, 0);
-    for (int i = 0; i < n; i++) {
-        cin >> s[i];
+    int n, k;
+    cin >> n >> k;
+    for (int i = 1; i <= n; i++) {
+        cin >> a[i];
+        pref[i] = pref[i - 1] + a[i];
+        pref_rising[i] = pref_rising[i - 1] + a[i] * i;
+        pref_falling[i] = pref_falling[i - 1] + a[i] * (n - i + 1);
     }
-    for (int i = 0; i < n; i++) {
-        cin >> f[i];
-    }
-    for (int i = 0; i < n; i++) {
-        //ll dp = cht.bs(0, cht.m.size() - 1, s[i]);
-        ll dp = cht.query(s[i]);
-        cht.add(f[i], dp);
-        if (i == n - 1) {
-            cout << dp;
+    cht_g[0].add(0, 0);
+    for (int i = 1; i <= n; i++) {
+        for (int j = i; j > 0; j--) {
+            if (cht_g[j - 1].m.size()) {
+                f[i][j] = -cht_g[j - 1].query(i - 1 - n) + pref_falling[i - 1] - pref[i - 1] * (n - i + 1);
+            }
+            if (cht_g[j - 1].m.size()) {
+                cht_f[j].add(i, -f[i][j] + pref_rising[i] - pref[i] * i);
+            }
+            if (cht_f[j].m.size()) {
+                g[i][j] = -cht_f[j].query(pref[i]) + pref_rising[i];
+            }
+
+
+            if (cht_f[j].m.size()) {
+                cht_g[j].add(pref[i], -g[i][j] + pref_falling[i]);
+            }
         }
+
     }
+    cout << g[n][k];
+
 
     return 0;
 }

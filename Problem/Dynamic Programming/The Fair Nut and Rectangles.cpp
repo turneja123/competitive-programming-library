@@ -1,4 +1,4 @@
-//https://cses.fi/problemset/task/2084/
+//https://codeforces.com/contest/1083/problem/E
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -9,17 +9,12 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 2e5 + 5;
-
-int s[N];
-int f[N];
-
 struct CHT {
   vector<ll> m, b;
   int ptr = 0;
 
   bool bad(int l1, int l2, int l3) {
-    return 1.0 * (b[l3] - b[l1]) * (m[l1] - m[l2])  <= 1.0 * (b[l2] - b[l1]) * (m[l1] - m[l3]); //(slope dec+query min),(slope inc+query max)
+    //return 1.0 * (b[l3] - b[l1]) * (m[l1] - m[l2])  <= 1.0 * (b[l2] - b[l1]) * (m[l1] - m[l3]); //(slope dec+query min),(slope inc+query max)
     return 1.0 * (b[l3] - b[l1]) * (m[l1] - m[l2])  > 1.0 * (b[l2] - b[l1]) * (m[l1] - m[l3]); //(slope dec+query max), (slope inc+query min)
   }
 
@@ -42,38 +37,40 @@ struct CHT {
   //(slope dec+query max), (slope inc+query min) -> x decreasing
   ll query(ll x) {
     if(ptr >= m.size()) ptr = m.size() - 1;
-    while(ptr < m.size() - 1 && f(ptr + 1, x) < f(ptr, x)) ptr++; // > for max
+    while(ptr < m.size() - 1 && f(ptr + 1, x) > f(ptr, x)) ptr++; // > for max
     return f(ptr, x);
   }
 
   ll bs(int l, int r, ll x) {
     int mid = (l + r) / 2;
-    if(mid + 1 < m.size() && f(mid + 1, x) < f(mid, x)) return bs(mid + 1, r, x); // > for max
-    if(mid - 1 >= 0 && f(mid - 1, x) < f(mid, x)) return bs(l, mid - 1, x); // > for max
+    if(mid + 1 < m.size() && f(mid + 1, x) > f(mid, x)) return bs(mid + 1, r, x); // > for max
+    if(mid - 1 >= 0 && f(mid - 1, x) > f(mid, x)) return bs(l, mid - 1, x); // > for max
     return f(mid, x);
   }
 };
 
 int main() {
     IOS;
-    int n, x;
-    cin >> n >> x;
+    int n;
+    cin >> n;
+    vector<tuple<int, int, ll>> v(n);
+    for (int i = 0; i < n; i++) {
+        int x, y; ll a;
+        cin >> x >> y >> a;
+        v[i] = make_tuple(x, y, a);
+    }
+    sort(v.begin(), v.end());
     CHT cht;
-    cht.add(x, 0);
+    cht.add(0, 0);
+    ll ans = 0;
     for (int i = 0; i < n; i++) {
-        cin >> s[i];
+        auto [x, y, a] = v[i];
+        //ll dp = (ll)x * y + cht.bs(0, cht.m.size(), y) - a;
+        ll dp = (ll)x * y + cht.query(y) - a;
+        ans = max(ans, dp);
+        cht.add(-x, dp);
     }
-    for (int i = 0; i < n; i++) {
-        cin >> f[i];
-    }
-    for (int i = 0; i < n; i++) {
-        //ll dp = cht.bs(0, cht.m.size() - 1, s[i]);
-        ll dp = cht.query(s[i]);
-        cht.add(f[i], dp);
-        if (i == n - 1) {
-            cout << dp;
-        }
-    }
+    cout << ans;
 
     return 0;
 }
