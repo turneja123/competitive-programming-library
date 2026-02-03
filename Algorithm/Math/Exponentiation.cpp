@@ -9,16 +9,16 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const long long M = 1e9 + 7;
+const ll M = 1e9 + 7;
 
-long long modPow(long long a, long long y) {
-    long long res = 1;
-    while(y > 0) {
-        if(y % 2 != 0) {
-            res = (res * a) % M;
+ll modPow(ll a, ll y) {
+    ll res = 1;
+    while (y > 0) {
+        if (y % 2 != 0) {
+            res = res * a % M;
         }
         y /= 2;
-        a = (a * a) % M;
+        a = a * a % M;
     }
     return res;
 }
