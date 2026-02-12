@@ -11,7 +11,7 @@ using namespace __gnu_pbds;
 
 struct BIT {
     int n;
-    vector<long long> t;
+    vector<ll> t;
     BIT(int _n) {
         n = _n;
         t.assign(n + 1, 0);
@@ -27,7 +27,7 @@ struct BIT {
             }
         }
     }
-    void upd(int i, long long val) {
+    void upd(int i, ll val) {
         if (i <= 0) {
             return;
         }
@@ -35,18 +35,14 @@ struct BIT {
             t[i] += val;
         }
     }
-    void upd(int l, int r, long long val) {
-        upd(l, val);
-        upd(r + 1, -val);
-    }
-    long long query(int i) {
-        long long ans = 0;
+    ll query(int i) {
+        ll ans = 0;
         for (; i >= 1; i -= (i & -i)) {
             ans += t[i];
         }
         return ans;
     }
-    long long query(int l, int r) {
+    ll query(int l, int r) {
         return query(r) - query(l - 1);
     }
 };
