@@ -9,88 +9,109 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 2e5 + 5;
 const int INF = 1e9;
 
-vector<int> adj[N];
-int pairU[N];
-int pairV[N];
-int dist[N];
-int m, n;
+struct Matching {
+    int n, m;
 
-bool bfs() {
-    queue <int> q;
-    for (int u = 1; u <= m; u++) {
-        if (pairU[u] == 0) {
-            dist[u] = 0;
-            q.push(u);
-        } else {
-            dist[u] = INF;
-        }
+    vector<int> pairU, pairV, dist;
+    vector<vector<int>> adj;
+
+    Matching(int _n, int _m) {
+        n = _n, m = _m;
+        adj.resize(n);
+        dist.resize(n);
+        pairU.resize(n, -1);
+        pairV.resize(m, -1);
     }
-    dist[0] = INF;
-    while (!q.empty()) {
-        int u = q.front();
-        q.pop();
-        if (dist[u] < dist[0]) {
-            for (auto it = adj[u].begin(); it != adj[u].end(); ++it) {
-                int v = *it;
-                if (dist[pairV[v]] == INF) {
-                    dist[pairV[v]] = dist[u] + 1;
-                    q.push(pairV[v]);
+
+    void add_edge(int u, int v) {
+        adj[u].push_back(v);
+    }
+
+    bool bfs() {
+        queue<int> q;
+        for (int u = 0; u < n; u++) {
+            if (pairU[u] == -1) {
+                dist[u] = 0;
+                q.push(u);
+            } else {
+                dist[u] = INF;
+            }
+        }
+
+        bool f = false;
+        while (!q.empty()) {
+            int u = q.front();
+            q.pop();
+            if (dist[u] < INF) {
+                for (auto v : adj[u]) {
+                    if (pairV[v] == -1) {
+                        f = true;
+                    } else if (dist[pairV[v]] == INF) {
+                        dist[pairV[v]] = dist[u] + 1;
+                        q.push(pairV[v]);
+                    }
                 }
             }
         }
+        return f;
     }
-    return (dist[0] != INF);
-}
 
-bool dfs(int u) {
-    if (u != 0) {
-        for (auto it = adj[u].begin(); it!= adj[u].end(); ++it) {
-            int v = *it;
-            if (dist[pairV[v]] == dist[u] + 1) {
-                if (dfs(pairV[v]) == true) {
+    bool dfs(int u) {
+        if (u != -1) {
+            for (auto v : adj[u]) {
+                if (pairV[v] == -1 || (dist[pairV[v]] == dist[u] + 1 && dfs(pairV[v]))) {
                     pairV[v] = u;
                     pairU[u] = v;
                     return true;
                 }
             }
+            dist[u] = INF;
+            return false;
         }
-        dist[u] = INF;
-        return false;
+        return true;
     }
-    return true;
-}
 
-int bpm() {
-    int res = 0;
-    while (bfs()) {
-        for (int u = 1; u <= m; u++) {
-            if (pairU[u] == 0 && dfs(u)) {
-                res++;
+    int bpm() {
+        for (int i = 0; i < n; i++) {
+            pairU[i] = -1;
+        }
+        for (int i = 0; i < m; i++) {
+            pairV[i] = -1;
+        }
+        while (bfs()) {
+            for (int u = 0; u < n; u++) {
+                if (pairU[u] == -1) {
+                    dfs(u);
+                }
             }
         }
+        int ans = 0;
+        for (int u = 0; u < n; u++) {
+            if (pairU[u] != -1) {
+                ans++;
+            }
+        }
+        return ans;
     }
-    return res;
-}
+};
 
 int main() {
     IOS;
-    int e;
-    cin >> m >> n >> e;
+    int n, m, e;
+    cin >> n >> m >> e;
+    Matching mc = Matching(n, m);
     for (int i = 0; i < e; i++) {
-        int a, b;
-        cin >> a >> b;
-        a++, b++;
-        adj[a].push_back(b + m);
+        int u, v;
+        cin >> u >> v;
+        mc.add_edge(u, v);
     }
-    cout << bpm() << endl;
-    for (int i = 1; i <= m; i++) {
-        if (pairU[i] > 0) {
-            cout << i - 1 << " " << pairU[i] - 1 - m << endl;
+    cout << mc.bpm() << endl;
+    for (int i = 0; i < n; i++) {
+        if (mc.pairU[i] != -1) {
+            cout << i << " " << mc.pairU[i] << endl;
         }
     }
     return 0;
-
 }
