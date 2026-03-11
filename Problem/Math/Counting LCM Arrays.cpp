@@ -9,10 +9,10 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 1200;
+const int N = 10;
 const long long M = 1e9 + 7;
 
-long long dp[N][N];
+long long dp[N][2];
 
 vector<long long> mul(int n, vector<long long> &a, vector<long long> &b, vector<long long> &tr) {
     vector<long long> res(n * 2 + 1, 0);
@@ -111,76 +111,33 @@ int main() {
         vector<int> divs;
         vector<int> prime_pow;
         int tmp = n;
-        for (int i = 1; i <= sqrt(n); i++) {
-            if (n % i == 0) {
-                divs.push_back(i);
-                if (n / i != i) {
-                    divs.push_back(n / i);
-                }
-            }
-            if (tmp % i == 0 && i != 1) {
-                int pe = 1;
+        for (int i = 2; i <= sqrt(n); i++) {
+            if (tmp % i == 0) {
+                int e = 0;
                 while (tmp % i == 0) {
                     tmp /= i;
-                    pe *= i;
+                    e++;
                 }
-                prime_pow.push_back(pe);
+                prime_pow.push_back(e);
             }
         }
         if (tmp > 1) {
-            prime_pow.push_back(tmp);
+            prime_pow.push_back(1);
         }
-        int d = divs.size(), e = prime_pow.size();
-        int full = (1 << e) - 1;
-        vector<int> mask(d, 0);
-        vector<int> freq(full + 1, 0);
-        for (int i = 0; i < d; i++) {
-            for (int j = 0; j < e; j++) {
-                if (divs[i] % prime_pow[j] == 0) {
-                    mask[i] += 1 << j;
-                }
+        ll ans = 1;
+        for (int e : prime_pow) {
+            dp[0][0] = e;
+            dp[0][1] = 1;
+            vector<ll> s{e + 1};
+            for (int i = 1; i < 10; i++) {
+                dp[i][1] = (dp[i - 1][0] + dp[i - 1][1]) % M;
+                dp[i][0] = dp[i - 1][1] * e % M;
+                s.push_back((dp[i][0] + dp[i][1]) % M);
             }
-            freq[mask[i]]++;
+            vector<ll> c = berlekamp_massey(s);
+            ans = ans * solve(c, s, m - 1) % M;
         }
-        for (int j = 0; j <= full; j++) {
-            dp[0][j] = freq[j];
-        }
-        vector<long long> sos(full + 1, 0);
-        for (int j = 0; j <= full; j++) {
-            sos[j] = dp[0][j];
-        }
-        for (int k = 0; k < e; k++) {
-            for (int j = 0; j <= full; j++) {
-                int c = j & (1 << k);
-                if (!c) {
-                    sos[j] = (sos[j] + sos[j | (1 << k)]) % M;
-                }
-            }
-        }
-        vector<long long> s;
-        for (int i = 1; i < 82; i++) {
-            s.push_back(0);
-            for (int j = 0; j <= full; j++) {
-                dp[i][j] = sos[full ^ j] * freq[j] % M;
-                s[i - 1] = (s[i - 1] + dp[i][j]) % M;
-            }
-            for (int j = 0; j <= full; j++) {
-                sos[j] = dp[i][j];
-            }
-            for (int k = 0; k < e; k++) {
-                for (int j = 0; j <= full; j++) {
-                    int c = j & (1 << k);
-                    if (!c) {
-                        sos[j] = (sos[j] + sos[j | (1 << k)]) % M;
-                    }
-                }
-            }
-            if ((int)berlekamp_massey(s).size() < i / 2 - 3) {
-                break;
-            }
-        }
-        vector<long long> c = berlekamp_massey(s);
-        cout << solve(c, s, m - 2) << endl;
+        cout << ans << endl;
     }
     return 0;
 }
