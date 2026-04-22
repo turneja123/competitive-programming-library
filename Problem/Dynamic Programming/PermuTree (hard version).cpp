@@ -1,4 +1,8 @@
-//https://codeforces.com/contest/2153/problem/F
+//https://codeforces.com/contest/1856/problem/E2
+#pragma GCC optimize("Ofast")
+#pragma GCC optimize("unroll-loops")
+#include <iterator>
+#pragma GCC target("popcnt")
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -8,9 +12,6 @@ using namespace __gnu_pbds;
 #define endl "\n"
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
-
-const int N = 5e5 + 5;
-const int SQ = 710;
 
 class BITSET {
 public:
@@ -29,6 +30,7 @@ public:
         }
         blocks.resize(len, 0ULL);
     }
+
     void set(int i) {
         int block = i / (8 * (int)sizeof(ubig));
         int offset = i % (8 * (int)sizeof(ubig));
@@ -344,95 +346,110 @@ public:
     bool operator!=(const BITSET& other) const {
         return !(*this == other);
     }
+    void shift_or(int shift) {
+        if (shift >= sz) return;
+        const int B = 8 * (int)sizeof(ubig);
+        int blockShift = shift / B;
+        int bitShift = shift % B;
+        int nblocks = blocks.size();
+
+        for (int i = nblocks - 1; i >= blockShift; i--) {
+            ubig val = blocks[i - blockShift] << bitShift;
+            if (bitShift > 0 && i - blockShift - 1 >= 0) {
+                val |= blocks[i - blockShift - 1] >> (B - bitShift);
+            }
+            blocks[i] |= val;
+        }
+
+        int extra = (int)blocks.size() * B - sz;
+        if (extra > 0) {
+            ubig mask = ~0ULL >> extra;
+            blocks.back() &= mask;
+        }
+    }
 };
 
-vector<BITSET> b;
-ll sum[SQ][SQ];
+const int N = 1e6 + 5;
+
+vector<int> adj[N];
+int sz[N];
+
+ll ans = 0;
+
+
+void dfs(int u, int p) {
+
+    vector<int> child;
+    sz[u] = 1;
+    for (int v : adj[u]) {
+        if (v != p) {
+            dfs(v, u);
+            sz[u] += sz[v];
+            child.push_back(sz[v]);
+        }
+    }
+    if (child.size() < 2) {
+        return;
+    }
+    int n = accumulate(child.begin(), child.end(), 0);
+    if (child.size() <= 10) {
+        int m = child.size();
+
+        ll best = 0;
+        for (int i = 0; i < 1 << m; i++) {
+            int s = 0;
+            for (int j = 0; j < m; j++) {
+                int c = (1 << j) & i;
+                if (c) {
+                    s += child[j];
+                }
+            }
+            best = max(best, (ll)s * (n - s));
+        }
+        ans += best;
+        return;
+    }
+    BITSET b(n / 2 + 1);
+    b.set(0);
+    sort(child.begin(), child.end());
+    int last = -1, ct = 0;
+    for (int i = 0; i < child.size(); i++) {
+        if (child[i] != last) {
+            int e = 1, need = ct;
+            while (ct > 0) {
+                b.shift_or(min(e, need) * last);
+                need -= e;
+                e *= 2;
+                ct /= 2;
+            }
+            last = child[i];
+        }
+        ct++;
+    }
+    int e = 1, need = ct;
+    while (ct > 0) {
+        b.shift_or(min(e, need) * last);
+        need -= e;
+        e *= 2;
+        ct /= 2;
+    }
+    int mid = b.find_prev_set_bit(n / 2);
+    ans += (ll)mid * (n - mid);
+
+}
 
 int main() {
     IOS;
-    int t;
-    cin >> t;
-    while (t--) {
-        int n, q;
-        cin >> n >> q;
-        vector<int> a(n);
-        vector<int> tmp(n + 1, 0);
-        vector<int> seen(n + 1, 0);
-        vector<int> restore(n + 1, 0);
-        for (int i = 0; i < n; i++) {
-            cin >> a[i];
-        }
-        for (int i = 0; i * SQ < n; i++) {
-
-            int idi = i, idj = i;
-            BITSET cur(n + 1);
-            ll s = 0;
-            for (int j = i * SQ; j < n; j++) {
-                cur.flip(a[j]);
-                if (cur.test(a[j])) {
-                    s += a[j];
-                } else {
-                    s -= a[j];
-                }
-                if ((j + 1) % SQ == 0) {
-                    if (i == 0) {
-                        b.push_back(cur);
-                    }
-                    sum[idi][idj] = s;
-                    idj++;
-                }
-            }
-        }
-        ll last = 0;
-        for (int i = 0; i < q; i++) {
-            ll L, R;
-            cin >> L >> R;
-            L = (L - 1 + last) % n + 1;
-            R = (R - 1 + last) % n + 1;
-            int l = min(L - 1, R - 1), r = max(L - 1, R - 1);
-            int bl = l / SQ;
-            if (l % SQ != 0) {
-                bl++;
-            }
-            int br = r / SQ;
-            if ((r + 1) % SQ != 0) {
-                br--;
-            }
-            int m = 0;
-            ll ans = 0;
-            auto f = [&](int l, int r) -> void {
-                for (int j = l; j < r; j++) {
-                    int z = (bl > br ? 0 : b[br].test(a[j]) ^ (bl == 0 ? 0 : b[bl - 1].test(a[j]))) ^ tmp[a[j]];
-                    if (!z) {
-                        ans += a[j];
-                    } else {
-                        ans -= a[j];
-                    }
-                    tmp[a[j]] = tmp[a[j]] ^ 1;
-                    if (!seen[a[j]]) {
-                        seen[a[j]] = true;
-                        restore[m++] = a[j];
-                    }
-                }
-            };
-            if (bl > br) {
-                f(l, r + 1);
-            } else {
-                ans = sum[bl][br];
-                f(l, bl * SQ);
-                f((br + 1) * SQ, r + 1);
-            }
-            last = ans;
-            cout << ans << " ";
-            for (int j = 0; j < m; j++) {
-                tmp[restore[j]] = 0;
-                seen[restore[j]] = 0;
-            }
-        }
-        b.clear();
-        cout << endl;
+    int n;
+    cin >> n;
+    for (int i = 1; i < n; i++) {
+        int p;
+        cin >> p;
+        p--;
+        adj[i].push_back(p);
+        adj[p].push_back(i);
     }
-
+    dfs(0, 0);
+    cout << ans;
     return 0;
 }

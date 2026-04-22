@@ -1,4 +1,4 @@
-//https://www.spoj.com/problems/FINDLR/
+//https://codeforces.com/contest/2204/problem/G
 #include <bits/stdc++.h>
 #include <ext/pb_ds/assoc_container.hpp>
 
@@ -6,9 +6,14 @@ using namespace std;
 using namespace __gnu_pbds;
 
 #define endl "\n"
+#define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-using ll = long long;
+const int N = 155;
+
+int dp[N][N], dp_nx[N][N];
+int L[N], R[N];
+int pref[N], suf[N];
 
 long long inverse(long long a, long long mod) {
     return a == 1 ? 1 : (ll)(mod - mod / a) * inverse(mod % a, mod) % mod;
@@ -255,20 +260,79 @@ struct LinearRecurrence {
     long long mod;
     int m, L;
 };
+
+
 int main() {
     IOS;
-    int t;
-    cin >> t;
-    while (t--) {
-        long long k, mod;
-        cin >> k >> mod;
-        vector<long long> s(2 * k);
-        for (int i = 0; i < 2 * k; i++) {
-            cin >> s[i];
-        }
-        LinearRecurrence c(s, mod, 0);
-        ll ans = c.solve(2 * k);
-        cout << ans << endl;
+    int n, m, mod;
+    cin >> n >> m >> mod;
+
+    vector<ll> s;
+    int ans = 0;
+    for (int r = 1; r <= m; r++) {
+        dp[1][r] = 1;
+        ans++;
     }
+    ans %= mod;
+    s.push_back(ans);
+
+    for (int i = 2; i <= 305; i++) {
+        for (int l = 0; l <= m; l++) {
+            pref[l] = 0;
+            suf[l] = 0;
+            R[l] = 0;
+            L[l] = 0;
+        }
+
+        for (int l = 1; l <= m; l++) {
+            for (int r = l; r <= m; r++) {
+                R[r] += dp[l][r];
+                if (R[r] >= mod) {
+                    R[r] -= mod;
+                }
+                L[l] += dp[l][r];
+                if (L[l] >= mod) {
+                    L[l] -= mod;
+                }
+            }
+        }
+
+        for (int i = 1; i <= m; i++) {
+            pref[i] = pref[i - 1] + R[i];
+            if (pref[i] >= mod) {
+                pref[i] -= mod;
+            }
+        }
+
+        for (int i = m; i >= 1; i--) {
+            suf[i] = suf[i + 1] + L[i];
+            if (suf[i] >= mod) {
+                suf[i] -= mod;
+            }
+        }
+
+        for (int l = 1; l <= m; l++) {
+            for (int r = l; r <= m; r++) {
+                dp_nx[l][r] = pref[m] - pref[l - 1] - suf[r + 1];
+                while (dp_nx[l][r] < 0) {
+                    dp_nx[l][r] += mod;
+                }
+                ans += dp_nx[l][r];
+                if (ans >= mod) {
+                    ans -= mod;
+                }
+            }
+        }
+
+        for (int l = 0; l <= m; l++) {
+            for (int r = 0; r <= m; r++) {
+                dp[l][r] = dp_nx[l][r];
+                dp_nx[l][r] = 0;
+            }
+        }
+        s.push_back(ans);
+    }
+    LinearRecurrence c(s, mod, 0);
+    cout << c.solve(n - 1);
     return 0;
 }
