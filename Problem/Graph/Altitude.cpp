@@ -1,0 +1,103 @@
+//https://dmoj.ca/problem/noi10p3
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
+
+using namespace std;
+using namespace __gnu_pbds;
+
+#define endl "\n"
+#define ll long long
+#define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
+
+const int N = 1005;
+const ll INF = 1e18;
+
+
+int costl[N][N];
+int costd[N][N];
+vector<pair<int, int>> adj[N * N];
+
+int id(int i, int j, int m) {
+    return 1 + i * (m - 1) + j;
+}
+
+int main() {
+    IOS;
+    int n;
+    cin >> n;
+    n++; int m = n;
+    int s = 0, t = (n - 1) * (m - 1) + 1;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m - 1; j++) {
+            cin >> costl[i][j];
+            int u = id(i - 1, j, m), v = id(i, j, m);
+            if (i == 0) {
+                u = s;
+            } else if (i == n - 1) {
+                v = t;
+            }
+            adj[u].push_back({v, costl[i][j]});
+        }
+    }
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < m; j++) {
+            cin >> costd[i][j];
+            int u = id(i, j, m), v = id(i, j - 1, m);
+            if (j == 0) {
+                v = t;
+            } else if (j == m - 1) {
+                u = s;
+            }
+
+            adj[u].push_back({v, costd[i][j]});
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m - 1; j++) {
+            int x;
+            cin >> x;
+            int u = id(i - 1, j, m), v = id(i, j, m);
+            if (i == 0) {
+                u = s;
+            } else if (i == n - 1) {
+                v = t;
+            }
+            adj[v].push_back({u, x});
+        }
+    }
+
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < m; j++) {
+            int x;
+            cin >> x;
+            int u = id(i, j, m), v = id(i, j - 1, m);
+            if (j == 0) {
+                v = t;
+            } else if (j == m - 1) {
+                u = s;
+            }
+            adj[v].push_back({u, x});
+        }
+    }
+    vector<ll> dist(t + 1, INF);
+    dist[s] = 0;
+    priority_queue<pair<ll, int>> pq;
+    pq.push({0, s});
+    while (pq.size()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+        d = -d;
+        if (d != dist[u]) {
+            continue;
+        }
+        for (auto [v, wt] : adj[u]) {
+            if (dist[v] > d + wt) {
+                dist[v] = d + wt;
+                pq.push({-dist[v], v});
+            }
+        }
+    }
+    cout << dist[t];
+
+    return 0;
+}
