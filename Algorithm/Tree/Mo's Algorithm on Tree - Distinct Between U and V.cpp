@@ -10,99 +10,88 @@ using namespace __gnu_pbds;
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
 const int N = 1e5 + 5;
+const int K = 20;
+const int SQ = 320;
 
-struct custom_hash {
-    static uint64_t splitmix64(uint64_t x) {
-        x += 0x9e3779b97f4a7c15;
-        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
-        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
-        return x ^ (x >> 31);
-    }
+int f[N];
+int c[N];
 
-    size_t operator()(uint64_t x) const {
-        static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
-        return splitmix64(x + FIXED_RANDOM);
-    }
+int up[K][N];
+vector<int> ord;
+vector<int> adj[N];
+int tin[N];
+int tout[N];
+int depth[N];
+int ans[N];
+int freq[N];
+int ct[N];
+
+struct Query {
+    int l;
+    int r;
+    int lca;
+    int i;
 };
 
-list<int> adj[N];
-vector<int> tin, tout;
-vector<vector<int>> up;
-int timer = 0, lg;
+void dfs(int u, int p) {
+    tin[u] = ord.size();
+    ord.push_back(u);
 
-int a[N];
-int freq[N];
-int sz;
-tuple<int, int, int, int> queries[N];
-int ans[N];
-gp_hash_table<int, int, custom_hash> pos;
-int tour[2 * N];
-int vis[N];
-
-bool comp(tuple<int, int, int, int> a, tuple<int, int, int, int> b) {
-    int block1 = get<0>(a) / sz;
-    int block2 = get<0>(b) / sz;
-    if (block1 != block2) {
-        return block1 < block2;
+    up[0][u] = p;
+    for (int i = 1; i < K; i++) {
+        int v = up[i - 1][u];
+        up[i][u] = up[i - 1][v];
     }
-    int r1 = get<1>(a);
-    int r2 = get<1>(b);
-    return r1 < r2;
-}
-
-void dfs(int v, int p) {
-    tour[timer] = v;
-    tin[v] = timer++;
-    up[v][0] = p;
-    for (int i = 1; i <= lg; i++) {
-        up[v][i] = up[up[v][i - 1]][i - 1];
-    }
-    for (int u : adj[v]) {
-        if (u != p) {
-            dfs(u, v);
+    for (int v : adj[u]) {
+        if (v != p) {
+            depth[v] = depth[u] + 1;
+            dfs(v, u);
         }
     }
-    tour[timer] = v;
-    tout[v] = timer++;
+
+    tout[u] = ord.size();
+    ord.push_back(u);
 }
 
-bool is_ancestor(int u, int v) {
-    return tin[u] <= tin[v] && tout[u] >= tout[v];
-}
 
 int lca(int u, int v) {
-    if (is_ancestor(u, v)) {
-        return u;
+    if (depth[u] > depth[v]) {
+        swap(u, v);
     }
-    if (is_ancestor(v, u)) {
-        return v;
-    }
-    for (int i = lg; i >= 0; --i) {
-        if (!is_ancestor(up[u][i], v)) {
-            u = up[u][i];
+    int d = depth[v] - depth[u];
+    for (int i = K - 1; i >= 0; i--) {
+        int c = d & (1 << i);
+        if (c) {
+            v = up[i][v];
         }
     }
-    return up[u][0];
+    if (u == v) {
+        return u;
+    }
+    for (int i = K - 1; i >= 0; i--) {
+        if (up[i][u] != up[i][v]) {
+            u = up[i][u];
+            v = up[i][v];
+        }
+    }
+    return up[0][u];
 }
 
 int main() {
     IOS;
     int n, q;
     cin >> n >> q;
-    lg = ceil(log2(n));
-    up.assign(n, vector<int>(lg + 1));
-    tin.resize(n);
-    tout.resize(n);
-    sz = sqrt(2 * n);
+    vector<int> compr;
     for (int i = 0; i < n; i++) {
-        cin >> a[i];
-        if (pos.find(a[i]) == pos.end()) {
-            pos[a[i]] = pos.size();
-        }
+        cin >> c[i];
+        compr.push_back(c[i]);
     }
+    sort(compr.begin(), compr.end());
+    compr.erase(unique(compr.begin(), compr.end()), compr.end());
     for (int i = 0; i < n; i++) {
-        a[i] = pos[a[i]];
+        c[i] = lower_bound(compr.begin(), compr.end(), c[i]) - compr.begin();
     }
+
     for (int i = 0; i < n - 1; i++) {
         int u, v;
         cin >> u >> v;
@@ -111,6 +100,7 @@ int main() {
         adj[v].push_back(u);
     }
     dfs(0, 0);
+    vector<Query> queries;
     for (int i = 0; i < q; i++) {
         int u, v;
         cin >> u >> v;
@@ -119,98 +109,75 @@ int main() {
             swap(u, v);
         }
         int l = lca(u, v);
-        if (l == u) {
-            queries[i] = make_tuple(tin[u], tin[v], i, -1);
+        if (u == l) {
+            queries.push_back({tin[u], tin[v], -1, i});
         } else {
-            queries[i] = make_tuple(tout[u], tin[v], i, l);
+            queries.push_back({tout[u], tin[v], l, i});
         }
     }
-    sort(queries, queries + q, comp);
-    int l = 0;
-    int r = -1;
-    int ct = 0;
+    sort(queries.begin(), queries.end(), [&](Query &a, Query &b) {
+        if (a.l / SQ != b.l / SQ) {
+            return a.l / SQ < b.l / SQ;
+        }
+        return a.r < b.r;
+    });
+    int sum = 0;
+    auto add = [&](int u) -> void {
+        freq[u]++;
+        if (freq[u] == 1) {
+            ct[c[u]]++;
+            if (ct[c[u]] == 1) {
+                sum++;
+            }
+        }
+        if (freq[u] == 0 || freq[u] == 2) {
+            ct[c[u]]--;
+            if (ct[c[u]] == 0) {
+                sum--;
+            }
+        }
+    };
+    auto rem = [&](int u) -> void {
+        freq[u]--;
+        if (freq[u] == 1) {
+            ct[c[u]]++;
+            if (ct[c[u]] == 1) {
+                sum++;
+            }
+        }
+        if (freq[u] == 0 || freq[u] == 2) {
+            ct[c[u]]--;
+            if (ct[c[u]] == 0) {
+                sum--;
+            }
+        }
+    };
+
+    int l = 0, r = -1;
     for (int i = 0; i < q; i++) {
-        int cur = get<2>(queries[i]);
-        int lq = get<0>(queries[i]);
-        int rq = get<1>(queries[i]);
-        int u;
+        auto [lq, rq, x, ind] = queries[i];
         while (r < rq) {
             r++;
-            u = tour[r];
-            vis[u]++;
-            if (vis[u] == 1) {
-                freq[a[u]]++;
-                if (freq[a[u]] == 1) {
-                    ct++;
-                }
-            } else if (vis[u] == 2) {
-                freq[a[u]]--;
-                if (freq[a[u]] == 0) {
-                    ct--;
-                }
-            }
-        }
-        while (r > rq) {
-            u = tour[r];
-            vis[u]--;
-            if (vis[u] == 1) {
-                freq[a[u]]++;
-                if (freq[a[u]] == 1) {
-                    ct++;
-                }
-            } else if (vis[u] == 0) {
-                freq[a[u]]--;
-                if (freq[a[u]] == 0) {
-                    ct--;
-                }
-            }
-            r--;
-        }
-        while (l < lq) {
-            u = tour[l];
-            vis[u]--;
-            if (vis[u] == 1) {
-                freq[a[u]]++;
-                if (freq[a[u]] == 1) {
-                    ct++;
-                }
-            } else if (vis[u] == 0) {
-                freq[a[u]]--;
-                if (freq[a[u]] == 0) {
-                    ct--;
-                }
-            }
-            l++;
+            add(ord[r]);
         }
         while (l > lq) {
             l--;
-            u = tour[l];
-            vis[u]++;
-            if (vis[u] == 1) {
-                freq[a[u]]++;
-                if (freq[a[u]] == 1) {
-                    ct++;
-                }
-            } else if (vis[u] == 2) {
-                freq[a[u]]--;
-                if (freq[a[u]] == 0) {
-                    ct--;
-                }
-            }
+            add(ord[l]);
         }
-        int t = get<3>(queries[i]);
-        if (t == -1) {
-            ans[cur] = ct;
+        while (l < lq) {
+            rem(ord[l]);
+            l++;
+        }
+        while (r > rq) {
+            rem(ord[r]);
+            r--;
+        }
+        if (x != -1) {
+            add(x);
+            ans[ind] = sum;
+            rem(x);
         } else {
-            freq[a[t]]++;
-            if (freq[a[t]] == 1) {
-                ct++;
-            }
-            ans[cur] = ct;
-            freq[a[t]]--;
-            if (freq[a[t]] == 0) {
-                ct--;
-            }
+            ans[ind] = sum;
         }
     }
     for (int i = 0; i < q; i++) {
