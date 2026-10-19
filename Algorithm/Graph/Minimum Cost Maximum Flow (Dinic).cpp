@@ -9,125 +9,139 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 2505;
-const long long INF = 1e18;
+const ll INF = 1e18;
 
-int s, t;
+struct MCMF {
+    struct Edge {
+        int from, to;
+        ll cap, f, cost;
+    };
+    int n, s, t, m;
 
-struct Edge {
-    int u, v;
-    int cap; long long cost;
-    Edge(int u, int v, int cap, long long cost) : u(u), v(v), cap(cap), cost(cost) {}
-};
+    vector<vector<int>> adj;
+    vector<int> ptr;
+    vector<ll> dist;
+    vector<int> vis;
+    vector<Edge> edges;
 
-vector<int> adj[N];
-vector<Edge> edges;
-
-void add_edge(int u, int v, int cap, long long cost) {
-    if (cap == 0) {
-        return;
+    MCMF(int _n, int _s, int _t) {
+        n = _n, s = _s, t = _t;
+        m = 0;
+        adj.resize(n);
+        ptr.resize(n);
+        dist.resize(n);
+        vis.resize(n);
     }
-    adj[u].push_back(edges.size());
-    edges.emplace_back(u, v, cap, cost);
-    adj[v].push_back(edges.size());
-    edges.emplace_back(v, u, 0, -cost);
-}
 
-void shortest_paths(int n, vector<long long>& d, vector<bool> &inq) {
-    d.assign(n, INF);
-    inq.assign(n, false);
-    d[s] = 0;
-    queue<int> q;
-    q.push(s);
-    while (!q.empty()) {
-        int u = q.front();
-        q.pop();
-        inq[u] = false;
-        for (int e : adj[u]) {
-            int v = edges[e].v;
-            if (edges[e].cap > 0 && d[v] > d[u] + edges[e].cost) {
-                d[v] = d[u] + edges[e].cost;
-                if (!inq[v]) {
-                    inq[v] = true;
-                    q.push(v);
+    void add_edge(int u, int v, ll cap, ll cost) {
+        adj[u].push_back(m);
+        edges.push_back({u, v, cap, 0, cost});
+        m++;
+        adj[v].push_back(m);
+        edges.push_back({v, u, cap, cap, -cost});
+        m++;
+    }
+
+    int spfa() {
+        vector<int> inq(n, 0);
+        fill(dist.begin(), dist.end(), INF);
+        dist[s] = 0;
+        inq[s] = 1;
+        queue<int> q;
+        q.push(s);
+        while (q.size()) {
+            int u = q.front();
+            q.pop();
+            inq[u] = 0;
+            for (int e : adj[u]) {
+                auto [_, v, cap, f, cost] = edges[e];
+                if (cap - f > 0 && dist[v] > dist[u] + cost) {
+                    dist[v] = dist[u] + cost;
+                    if (!inq[v]) {
+                        inq[v] = 1;
+                        q.push(v);
+                    }
                 }
             }
         }
+        return dist[t] != INF;
     }
-}
 
-int dfs(int u, int pushed, vector<int> &ptr, vector<bool> &vis, vector<long long> &d) {
-    if (u == t) {
-        return pushed;
+    ll dfs(int u, ll pushed) {
+        if (!pushed) {
+            return 0;
+        }
+        if (u == t) {
+            return pushed;
+        }
+        vis[u] = 1;
+        for (int &i = ptr[u]; i < adj[u].size(); i++) {
+            int e = adj[u][i];
+            auto [_, v, cap, f, cost] = edges[e];
+            if (cap - f == 0 || dist[v] != dist[u] + cost || vis[v]) {
+                continue;
+            }
+            ll cur = dfs(v, min(pushed, cap - f));
+            if (!cur) {
+                continue;
+            }
+            pushed = cur;
+            edges[e].f += pushed;
+            edges[e ^ 1].f -= pushed;
+            vis[u] = 0;
+            return pushed;
+        }
+        vis[u] = 0;
+        return 0;
     }
-    int ans = 0;
-    vis[u] = true;
-    for (int& cid = ptr[u]; cid < (int)adj[u].size(); cid++) {
-        int id = adj[u][cid];
-        int v = edges[id].v;
-        if (edges[id].cap > 0 && d[v] == d[u] + edges[id].cost && !vis[v]) {
-            int tr = dfs(v, min(pushed, edges[id].cap), ptr, vis, d);
-            ans += tr;
-            edges[id].cap -= tr;
-            edges[id ^ 1].cap += tr;
-            pushed -= tr;
-            if (pushed == 0) {
-                vis[u] = false;
-                break;
+
+    ll flow(ll k) {
+        ll ans = 0, f = 0;
+        while (spfa() && f < k) {
+            fill(ptr.begin(), ptr.end(), 0);
+            while (1) {
+                ll cur = dfs(s, INF);
+                if (!cur) {
+                    break;
+                }
+                ans += dist[t] * cur;
+                f += cur;
             }
         }
+        return ans;
     }
-    return ans;
-}
-
-long long min_cost_flow(int N, int k) {
-    int flow = 0;
-    long long ans = 0;
-    vector<long long> d;
-    vector<bool> vis;
-    while (flow < k) {
-        shortest_paths(N, d, vis);
-        if (d[t] == INF) {
-            break;
-        }
-        vector<int> ptr(N, 0);
-        int f = dfs(s, k - flow, ptr, vis, d);
-        flow += f;
-        ans += d[t] * f;
-    }
-    if (flow < k) {
-        return -1;
-    }
-    return ans;
-}
+};
 
 int main() {
     IOS;
     int n;
     cin >> n;
-    s = 0, t = 2 * n + 1;
+    MCMF mcmf = MCMF(2 * n + 2, 0, 2 * n + 1);
+    for (int i = 0; i < n; i++) {
+        mcmf.add_edge(0, 1 + i, 1, 0);
+    }
+    for (int i = 0; i < n; i++) {
+        mcmf.add_edge(1 + n + i, 2 * n + 1, 1, 0);
+    }
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            int c;
-            cin >> c;
-            add_edge(i + 1, j + n + 1, 1, c);
+            ll a;
+            cin >> a;
+            mcmf.add_edge(1 + i, 1 + n + j, 1, a);
         }
     }
-    for (int i = 0; i < n; i++) {
-        add_edge(s, i + 1, 1, 0);
-        add_edge(i + n + 1, t, 1, 0);
-    }
-    long long c = min_cost_flow(t + 1, n);
-    cout << c << endl;
+    cout << mcmf.flow(n) << endl;
     vector<int> ans(n);
-    for (int e = 0; e < edges.size(); e += 2) {
-        if (edges[e].cap == 0 && edges[e].cost != 0) {
-            ans[edges[e].u - 1] = edges[e].v - n - 1;
+    for (int e = 0; e < mcmf.edges.size(); e += 2) {
+        auto &edge = mcmf.edges[e];
+        if (1 <= edge.from && edge.from <= n && n + 1 <= edge.to && edge.to <= 2 * n && edge.f == 1) {
+            ans[edge.from - 1] = edge.to - n - 1;
         }
     }
     for (int v : ans) {
         cout << v << " ";
     }
+
 
     return 0;
 }

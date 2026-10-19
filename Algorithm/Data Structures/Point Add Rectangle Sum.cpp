@@ -9,76 +9,74 @@ using namespace __gnu_pbds;
 #define ll long long
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-const int N = 2e5 + 5;
+struct BIT {
+    vector<int> compr_x;
+    vector<vector<int>> compr_y;
+    vector<vector<ll>> t;
+    map<int, vector<int>> mp;
+    int n;
 
-template<class T, int SZ> struct OffBIT2D {
-    bool mode = 0;
-    vector<pair<int, int>> todo;
-    int cnt[SZ], st[SZ];
-    vector<int> val; vector<T> bit;
-    void init() {
-        mode = 1;
-        int lst[SZ];
-        for (int i = 0; i < SZ; i++) {
-            lst[i] = cnt[i] = 0;
+    int id(int x, vector<int> &v) {
+        return lower_bound(v.begin(), v.end(), x) - v.begin();
+    }
+
+    int id_q(int x, vector<int> &v) {
+        return upper_bound(v.begin(), v.end(), x) - v.begin() - 1;
+    }
+
+    void add(int x, int y) {
+        mp[x].push_back(y);
+    }
+
+    void build() {
+        for (auto [x, v] : mp) {
+            compr_x.push_back(x);
+            compr_y.push_back(v);
         }
-        sort(todo.begin(), todo.end(),
-            [](const pair<int, int>& a, const pair<int, int>& b) {
-                return a.second < b.second;
-            });
-        for (auto t : todo) {
-            for (int x = t.first; x < SZ; x += x & -x) {
-                if (lst[x] != t.second) {
-                    lst[x] = t.second, cnt[x]++;
+        mp.clear();
+        n = compr_x.size();
+        for (int i = n - 1; i >= 0; i--) {
+            for (int y : compr_y[i]) {
+                int pos = i + 1;
+                pos += pos & (-pos);
+                for (int i = pos; i <= n; i += i & (-i)) {
+                    compr_y[i - 1].push_back(y);
                 }
             }
         }
-        int sum = 0;
-        for (int i = 0; i < SZ; i++) {
-            lst[i] = 0, st[i] = (sum += cnt[i]);
+
+        t.resize(n);
+        for (int i = 0; i < n; i++) {
+            sort(compr_y[i].begin(), compr_y[i].end());
+            compr_y[i].erase(unique(compr_y[i].begin(), compr_y[i].end()), compr_y[i].end());
+            t[i] = vector<ll>(compr_y[i].size(), 0);
         }
-        val.resize(sum); bit.resize(sum); reverse(todo.begin(), todo.end());
-        for (auto t : todo) {
-            for (int x = t.first; x < SZ; x += x & -x) {
-                if (lst[x] != t.second) {
-                    lst[x] = t.second, val[--st[x]] = t.second;
-                }
+    }
+
+    void upd(int x, int y, int wt) {
+        x = id(x, compr_x);
+        for (int i = x + 1; i <= n; i += i & (-i)) {
+            int id_y = id(y, compr_y[i - 1]);
+            for (int j = id_y + 1; j <= compr_y[i - 1].size(); j += j & (-j)) {
+                t[i - 1][j - 1] += wt;
             }
         }
     }
-    int rank(int y, int l, int r) {
-        return upper_bound(val.begin() + l, val.begin() + r, y) - val.begin() - l;
-    }
-    void UPD(int x, int y, T t) {
-        for (y = rank(y, st[x], st[x] + cnt[x]); y <= cnt[x]; y += y & -y) {
-            bit[st[x] + y - 1] += t;
-        }
-    }
-    void upd(int x, int y, T t) {
-        if (!mode) {
-            todo.push_back({x, y});
-        } else {
-            for (; x < SZ; x += x & -x) {
-                UPD(x, y, t);
+
+    ll query_rect(int x, int y) {
+        x = id_q(x, compr_x);
+        ll ans = 0;
+        for (int i = x + 1; i >= 1; i -= i & (-i)) {
+            int id_y = id_q(y, compr_y[i - 1]);
+            for (int j = id_y + 1; j >= 1; j -= j & (-j)) {
+                ans += t[i - 1][j - 1];
             }
         }
+        return ans;
     }
-    T QUERY(int x, int y) {
-        T res = 0;
-        for (y = rank(y, st[x], st[x] + cnt[x]); y; y -= y & -y) {
-            res += bit[st[x] + y - 1];
-        }
-        return res;
-    }
-    T query(int x, int y) {
-        T res = 0;
-        for (; x; x -= x & -x) {
-            res += QUERY(x, y);
-        }
-        return res;
-    }
-    T query(int xl, int yl, int xr, int yr) {
-        return query(xr, yr) - query(xl - 1, yr) - query(xr ,yl - 1) + query(xl - 1, yl - 1);
+
+    ll query(int x1, int y1, int x2, int y2) {
+        return query_rect(x2, y2) - query_rect(x1 - 1, y2) - query_rect(x2, y1 - 1) + query_rect(x1 - 1, y1 - 1);
     }
 };
 
@@ -86,17 +84,13 @@ int main() {
     IOS;
     int n, q;
     cin >> n >> q;
-    vector<tuple<int, int, int>> points;
+    BIT bit;
     vector<tuple<int, int, int, int, int>> queries;
-    vector<pair<int, int>> upd;
-    set<int> st;
     for (int i = 0; i < n; i++) {
         int x, y, w;
         cin >> x >> y >> w;
-        x++, y++;
-        points.push_back(make_tuple(x, y, w));
-        upd.push_back({x, y});
-        st.insert(x);
+        queries.push_back({0, x, y, w, -1});
+        bit.add(x, y);
     }
     for (int i = 0; i < q; i++) {
         int t;
@@ -104,47 +98,23 @@ int main() {
         if (t == 0) {
             int x, y, w;
             cin >> x >> y >> w;
-            x++, y++;
-            queries.push_back(make_tuple(0, x, y, w, -1));
-            upd.push_back({x, y});
-            st.insert(x);
+            queries.push_back({0, x, y, w, -1});
+            bit.add(x, y);
         } else {
-            int l, d, r, u;
-            cin >> l >> d >> r >> u;
-            l++, d++, r++, u++;
-            queries.push_back(make_tuple(1, l, d, r, u));
+            int x1, y1, x2, y2;
+            cin >> x1 >> y1 >> x2 >> y2;
+            x2--, y2--;
+            queries.push_back({1, x1, y1, x2, y2});
         }
     }
-    map<int, int> compr;
-    int m = 0;
-    for (int x : st) {
-        compr[x] = m++;
-    }
-    OffBIT2D<long long, N> bit;
-    for (int i = 0; i < upd.size(); i++) {
-        upd[i].first = compr[upd[i].first] + 1;
-        bit.upd(upd[i].first, upd[i].second, 0);
-    }
-    bit.init();
-    for (int i = 0; i < n; i++) {
-        auto [x, y, w] = points[i];
-        bit.upd(compr[x] + 1, y, w);
-    }
-    for (int i = 0; i < q; i++) {
-        auto [t, x, y, w, d] = queries[i];
+    bit.build();
+    for (auto [t, x1, y1, x2, y2] : queries) {
         if (t == 0) {
-            bit.upd(compr[x] + 1, y, w);
+            bit.upd(x1, y1, x2);
         } else {
-            auto l = st.lower_bound(x), r = st.lower_bound(w);
-            if (l == st.end() || r == st.begin()) {
-                cout << 0 << endl;
-                continue;
-            }
-            r--;
-            x = compr[*l] + 1;
-            w = compr[*r] + 1;
-            cout << bit.query(x, y, w, d - 1) << endl;
+            cout << bit.query(x1, y1, x2, y2) << endl;
         }
     }
+
     return 0;
 }

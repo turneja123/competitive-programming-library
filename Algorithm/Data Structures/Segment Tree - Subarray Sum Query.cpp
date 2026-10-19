@@ -10,28 +10,37 @@ using namespace __gnu_pbds;
 #define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
 const int N = 2e5 + 5;
-const long long INF = 1e12;
 
 struct Node {
-    long long pref;
-    long long suf;
-    long long sum;
-    long long val;
-    Node() : pref(0), suf(0), sum(0), val(0) {}
-    Node(long long x) : pref(x), suf(x), sum(x), val(x) {}
+    ll pref;
+    ll suf;
+    ll sum;
+    ll val;
+    int sentinel;
+    Node() {
+        sentinel = 1;
+    }
+    Node(ll x) {
+        sentinel = 0;
+        pref = x;
+        suf = x;
+        sum = x;
+        val = x;
+    }
 };
 
 Node segtree[4 * N];
-long long a[N];
+ll a[N];
 
 Node combine(Node left, Node right) {
-    Node node = Node();
-    if (left.val == -INF) {
+    if (left.sentinel) {
         return right;
     }
-    if (right.val == -INF) {
+    if (right.sentinel) {
         return left;
     }
+    Node node = Node();
+    node.sentinel = 0;
     node.sum = left.sum + right.sum;
     node.pref = max(left.pref, left.sum + right.pref);
     node.suf = max(right.suf, right.sum + left.suf);
@@ -41,7 +50,7 @@ Node combine(Node left, Node right) {
 
 Node query(int l, int r, int lq, int rq, int node) {
     if (l > rq || r < lq) {
-        Node sentinel(-INF);
+        Node sentinel;
         return sentinel;
     }
 
