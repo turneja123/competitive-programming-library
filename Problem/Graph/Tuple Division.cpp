@@ -1,237 +1,121 @@
 //https://www.spoj.com/problems/TUPLEDIV/
-#include <iostream>
-#include <vector>
-#include <queue>
-#include <algorithm>
+#include <bits/stdc++.h>
+#include <ext/pb_ds/assoc_container.hpp>
 
 using namespace std;
+using namespace __gnu_pbds;
 
-const int MAXN = 10005;
-const int MAXM = 12;
-const long long INF_LL = 1e18;
+#define endl "\n"
+#define ll long long
+#define IOS ios_base::sync_with_stdio(false); cin.tie(nullptr);
 
-int N, M;
-int C[MAXM];
-int val[MAXN][MAXM];
+const int N = 1e4 + 5;
+const int K = 15;
+const int INF = 1e9;
 
-struct VectorCost {
-    long long v[MAXM];
+int a[N][K];
+int grp[N];
 
-    VectorCost() {
-        for(int i=0; i<MAXM; ++i) v[i] = 0;
+int c[K];
+int mn[K];
+int par[K];
+int from[K];
+bool vis[K];
+
+priority_queue<pair<int, int>> pq[K][K];
+
+int get(int u, int v) {
+    while (pq[u][v].size() && grp[pq[u][v].top().second] != u) {
+        pq[u][v].pop();
     }
-
-    void set_val(int dim, int val) {
-        for(int i=0; i<MAXM; ++i) v[i] = 0;
-        if(dim >= 0 && dim < MAXM) v[dim] = val;
-    }
-
-    VectorCost operator+(const VectorCost& other) const {
-        VectorCost res;
-        for(int i=0; i<M; ++i) res.v[i] = v[i] + other.v[i];
-        return res;
-    }
-
-    VectorCost operator-(const VectorCost& other) const {
-        VectorCost res;
-        for(int i=0; i<M; ++i) res.v[i] = v[i] - other.v[i];
-        return res;
-    }
-
-    bool operator<(const VectorCost& other) const {
-        for(int i=0; i<M; ++i) {
-            if(v[i] != other.v[i]) return v[i] < other.v[i];
-        }
-        return false;
-    }
-
-    bool operator>(const VectorCost& other) const {
-        return other < *this;
-    }
-
-    bool operator==(const VectorCost& other) const {
-        for(int i=0; i<M; ++i) if(v[i] != other.v[i]) return false;
-        return true;
-    }
-
-    bool operator!=(const VectorCost& other) const {
-        return !(*this == other);
-    }
-};
-
-struct EdgeData {
-    VectorCost cost;
-    int tuple_idx;
-
-    bool operator>(const EdgeData& other) const {
-        return cost > other.cost;
-    }
-};
-
-int current_group[MAXN];
-int group_count[MAXM];
-
-priority_queue<EdgeData, vector<EdgeData>, greater<EdgeData>> heaps[MAXM + 1][MAXM + 1];
-VectorCost potentials[MAXM + 1];
-VectorCost dist[MAXM + 1];
-int parent_node[MAXM + 1];
-int trans_tuple[MAXM + 1];
-bool visited[MAXM + 1];
-
-VectorCost get_tuple_cost(int tuple_idx, int group_idx) {
-    VectorCost c;
-    if (group_idx < M) {
-        c.set_val(group_idx, -val[tuple_idx][group_idx]);
-    }
-    return c;
-}
-
-void solve() {
-    cin >> N >> M;
-
-    int total_needed = 0;
-    for (int i = 0; i < M; ++i) {
-        cin >> C[i];
-        total_needed += C[i];
-        group_count[i] = 0;
-    }
-
-    for (int i = 1; i <= N; ++i) {
-        for (int j = 0; j < M; ++j) {
-            cin >> val[i][j];
-        }
-        current_group[i] = M;
-    }
-
-    for(int i=0; i<=M; ++i) {
-        for(int j=0; j<=M; ++j) {
-            while(!heaps[i][j].empty()) heaps[i][j].pop();
-        }
-        potentials[i] = VectorCost();
-    }
-
-    for(int i=1; i<=N; ++i) {
-        for(int j=0; j<M; ++j) {
-            VectorCost cost = get_tuple_cost(i, j);
-            heaps[M][j].push({cost, i});
-        }
-    }
-
-    int items_processed = 0;
-
-    while(items_processed < total_needed) {
-        for(int i=0; i<=M; ++i) {
-            dist[i].v[0] = INF_LL;
-            visited[i] = false;
-            parent_node[i] = -1;
-        }
-
-        dist[M] = VectorCost();
-
-        while(true) {
-            int u = -1;
-            for(int i=0; i<=M; ++i) {
-                if(!visited[i] && dist[i].v[0] != INF_LL) {
-                    if(u == -1 || dist[i] < dist[u]) {
-                        u = i;
-                    }
-                }
-            }
-
-            if(u == -1) break;
-            visited[u] = true;
-
-            for(int v=0; v<M; ++v) {
-                if(u == v) continue;
-
-                while(!heaps[u][v].empty()) {
-                    if(current_group[heaps[u][v].top().tuple_idx] != u) {
-                        heaps[u][v].pop();
-                    } else {
-                        break;
-                    }
-                }
-
-                if(!heaps[u][v].empty()) {
-                    EdgeData best_edge = heaps[u][v].top();
-                    VectorCost reduced = best_edge.cost + potentials[u] - potentials[v];
-
-                    if(dist[u] + reduced < dist[v]) {
-                        dist[v] = dist[u] + reduced;
-                        parent_node[v] = u;
-                        trans_tuple[v] = best_edge.tuple_idx;
-                    }
-                }
-            }
-        }
-
-        int best_sink = -1;
-        VectorCost best_sink_dist;
-        best_sink_dist.v[0] = INF_LL;
-
-        for(int j=0; j<M; ++j) {
-            if(group_count[j] < C[j] && dist[j].v[0] != INF_LL) {
-                VectorCost potential_adjusted = dist[j] + potentials[j];
-
-                if(best_sink == -1 || potential_adjusted < best_sink_dist) {
-                    best_sink = j;
-                    best_sink_dist = potential_adjusted;
-                }
-            }
-        }
-
-        if(best_sink == -1) break;
-
-        int curr = best_sink;
-        while(curr != M) {
-            int prev = parent_node[curr];
-            int item = trans_tuple[curr];
-
-            current_group[item] = curr;
-
-            for(int next=0; next<M; ++next) {
-                if(next == curr) continue;
-                VectorCost c_curr = get_tuple_cost(item, curr);
-                VectorCost c_next = get_tuple_cost(item, next);
-                heaps[curr][next].push({c_next - c_curr, item});
-            }
-
-            curr = prev;
-        }
-
-        group_count[best_sink]++;
-        items_processed++;
-
-        for(int i=0; i<=M; ++i) {
-            if(dist[i].v[0] != INF_LL) {
-                potentials[i] = potentials[i] + dist[i];
-            }
-        }
-    }
-
-    long long final_scores[MAXM];
-    for(int i=0; i<M; ++i) final_scores[i] = 0;
-
-    for(int i=1; i<=N; ++i) {
-        if(current_group[i] < M) {
-            final_scores[current_group[i]] += val[i][current_group[i]];
-        }
-    }
-
-    for(int i=0; i<M; ++i) {
-        cout << final_scores[i] << (i == M - 1 ? "" : " ");
-    }
-    cout << endl;
+    return (pq[u][v].size() ? pq[u][v].top().first : -1);
 }
 
 int main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL);
+    IOS;
     int t;
     cin >> t;
     while (t--) {
-        solve();
+        int n, m;
+        cin >> n >> m;
+        for (int j = 0; j < m; j++) {
+            cin >> c[j];
+        }
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                cin >> a[i][j];
+                pq[m][j].push(make_pair(a[i][j], i));
+            }
+            grp[i] = m;
+        }
+        for (int g = 0; g < m; g++) {
+            int score = 0;
+            for (int it = 0; it < c[g]; it++) {
+                for (int j = 0; j < g; j++) {
+                    vis[j] = false;
+                }
+                queue<int> q;
+                q.push(m);
+                while (q.size()) {
+                    int u = q.front();
+                    q.pop();
+                    for (int v = 0; v < g; v++) {
+                        if (c[v] > 0 && v != u && !vis[v] && get(u, v) == mn[v]) {
+                            vis[v] = true;
+                            par[v] = u;
+                            from[v] = pq[u][v].top().second;
+                            q.push(v);
+                        }
+                    }
+                }
+                int best = get(m, g), u = m;
+                for (int v = 0; v < g; v++) {
+                    if (vis[v]) {
+                        int cur = get(v, g);
+                        if (cur > best) {
+                            best = cur;
+                            u = v;
+                        }
+                    }
+                }
+                score += best;
+                grp[pq[u][g].top().second] = g;
+                while (u != m) {
+                    int x = from[u];
+                    grp[x] = u;
+                    for (int j = 0; j < m; j++) {
+                        if (j != u) {
+                            pq[u][j].push(make_pair(a[x][j], x));
+                        }
+                    }
+                    u = par[u];
+                }
+            }
+            mn[g] = INF;
+            for (int i = 0; i < n; i++) {
+                if (grp[i] == g) {
+                    mn[g] = min(mn[g], a[i][g]);
+                }
+            }
+            for (int i = 0; i < n; i++) {
+                if (grp[i] == g && a[i][g] == mn[g]) {
+                    for (int j = 0; j < m; j++) {
+                        if (j != g) {
+                            pq[g][j].push(make_pair(a[i][j], i));
+                        }
+                    }
+                }
+            }
+            cout << score << " ";
+        }
+        cout << endl;
+        for (int i = 0; i <= m; i++) {
+            for (int j = 0; j < m; j++) {
+                while (pq[i][j].size()) {
+                    pq[i][j].pop();
+                }
+            }
+        }
     }
-
     return 0;
 }
